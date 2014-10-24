@@ -205,13 +205,23 @@ public class AnchorWatchActivity extends Activity
         private void drawCircle(CircleFitter circleFitter)
         {
             DenseMatrix64F center = circleFitter.getCenter();
-            double radius = circleFitter.getRadius();
-            drawCircle((float)center.get(0, 0), (float)center.get(0, 0), (float)radius);
+            float x = (float)center.get(0, 0);
+            float y = (float)center.get(0, 1);
+            float radius = (float) circleFitter.getRadius();
+            drawLine(4, "center=("+x+", "+y+") r="+radius);
+            drawLine(5, "Init cost="+circleFitter.getLevenbergMarquardt().getInitialCost());
+            drawLine(6, "Final cost="+circleFitter.getLevenbergMarquardt().getFinalCost());
+            drawCircle(x, y, radius);
         }
 
         private void drawText(String text, int x, int y)
         {
             canvas.drawText(text, x, y, paint);
+        }
+        
+        private void drawLine(int line, String text)
+        {
+            canvas.drawText(text, 5, 20*(line+1), paint);
         }
         
     }
