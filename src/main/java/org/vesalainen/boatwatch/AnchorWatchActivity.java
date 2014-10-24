@@ -13,9 +13,12 @@ import android.view.Menu;
 import android.view.View;
 import org.ejml.data.DenseMatrix64F;
 import org.vesalainen.ui.AbstractView;
+import org.vesalainen.util.math.CircleFitter;
 
 public class AnchorWatchActivity extends Activity
 {
+    private static final int Size = 40;
+    private enum State {Gather, Initial, Optimize, Filter, Optimize2 }; 
     private LocationManager locationManager;
     private AnchorView anchorView;
 
@@ -35,7 +38,7 @@ public class AnchorWatchActivity extends Activity
         setContentView(anchorView);
         
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, anchorView);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, anchorView);
     }
 
     @Override
@@ -56,8 +59,11 @@ public class AnchorWatchActivity extends Activity
     private class AnchorView extends View implements LocationListener
     {
         private Drawer drawer = new Drawer();
-        private DenseMatrix64F matrix = new DenseMatrix64F(10, 2);
+        private DenseMatrix64F points = new DenseMatrix64F(Size, 2);
+        private DenseMatrix64F center = new DenseMatrix64F(2, 1);
         private int index;
+        private State state = State.Gather;
+        private CircleFitter circleFitter;
         
         public AnchorView(Context context)
         {
@@ -69,24 +75,68 @@ public class AnchorWatchActivity extends Activity
         {
             super.onDraw(canvas);
             drawer.setCanvas(canvas);
-            if (drawer.isReady())
+            String text = state.name()+" "+index;
+            drawer.drawText(text, 5, 20);
+            switch (state)
             {
-                drawer.drawPoints(matrix);
+                case Gather:
+                    drawer.drawPoints(points, index);
+                    break;
+                case Initial:
+                    CircleFitter.initialCenter(points, center);
+                    circleFitter = new CircleFitter(center);
+                    drawer.drawPoints(points);
+                    state = State.Optimize;
+                    postInvalidateDelayed(2000);
+                    break;
+                case Optimize:
+                    circleFitter.fit(points);
+                    drawer.drawPoints(points);
+                    state = State.Filter;
+                    postInvalidateDelayed(2000);
+                    break;
+                case Filter:
+                    CircleFitter.filterInnerPoints(points, center);
+                    drawer.drawPoints(points);
+                    state = State.Optimize2;
+                    postInvalidateDelayed(2000);
+                    break;
+                case Optimize2:
+                    circleFitter.fit(points);
+                    drawer.drawPoints(points);
+                    state = State.Gather;
+                    points.reshape(Size, 2);
+                    index = 0;
+                    break;
+            }
+            if (circleFitter != null)
+            {
+                drawer.drawCircle(circleFitter);
             }
         }
 
         public void onLocationChanged(Location location)
         {
-            double latitude = location.getLatitude();
-            double longitude = Math.cos(Math.toRadians(latitude))*location.getLongitude();
-            drawer.update(longitude, latitude);
-            matrix.set(index, 0, longitude);
-            matrix.set(index, 1, latitude);
-            index++;
-            if (index == matrix.numRows)
+            if (state == State.Gather)
             {
-                invalidate();
-                index = 0;
+                double latitude = location.getLatitude();
+                double longitude = Math.cos(Math.toRadians(latitude))*location.getLongitude();
+                drawer.update(longitude, latitude);
+                points.set(index, 0, longitude);
+                points.set(index, 1, latitude);
+                index++;
+                if (index == points.numRows)
+                {
+                    if (circleFitter == null)
+                    {
+                        state = State.Initial;
+                    }
+                    else
+                    {
+                        state = State.Optimize;
+                    }
+                }
+                postInvalidateDelayed(1000);
             }
         }
 
@@ -130,22 +180,38 @@ public class AnchorWatchActivity extends Activity
             int w = canvas.getWidth();
             int h = canvas.getHeight();
             String text = "x="+x+" y="+y+" sx="+sx+" sy="+sy+" sr="+sr+" w="+w+" h="+h+" xMax="+xMax+" scale="+scale;
-            canvas.drawText(text, 5, 20, paint);
+            canvas.drawText(text, 5, 40, paint);
             canvas.drawCircle((float) translateX(x), (float) translateY(y), (float) scale(r), paint);
         }
 
         private void drawPoints(DenseMatrix64F matrix)
         {
-            for (int row = 0;row<matrix.numRows;row++)
+            drawPoints(matrix, matrix.numRows);
+        }
+        private void drawPoints(DenseMatrix64F matrix, int count)
+        {
+            for (int row = 0;row<count;row++)
             {
                 double x = matrix.get(row, 0);
                 double y = matrix.get(row, 1);
                 float tx = (float) translateX(x);
                 float ty = (float) translateY(y);
-                String text = "x="+x+" y="+y+" tx="+tx+" ty="+ty;
-                canvas.drawText(text, 5, 20*(row+1), paint);
+                //String text = "x="+x+" y="+y+" tx="+tx+" ty="+ty;
+                //canvas.drawText(text, 5, 20*(row+2), paint);
                 canvas.drawPoint(tx, ty, paint);
             }
+        }
+
+        private void drawCircle(CircleFitter circleFitter)
+        {
+            DenseMatrix64F center = circleFitter.getCenter();
+            double radius = circleFitter.getRadius();
+            drawCircle((float)center.get(0, 0), (float)center.get(0, 0), (float)radius);
+        }
+
+        private void drawText(String text, int x, int y)
+        {
+            canvas.drawText(text, x, y, paint);
         }
         
     }
