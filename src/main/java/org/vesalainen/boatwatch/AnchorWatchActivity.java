@@ -17,6 +17,7 @@ import org.vesalainen.util.math.CircleFitter;
 
 public class AnchorWatchActivity extends Activity
 {
+    private static final double Cable = 1.0/600.0;
     private static final int Size = 10;
     private enum State {Gather, Initial, Optimize, Filter, Optimize2 }; 
     private LocationManager locationManager;
@@ -76,24 +77,42 @@ public class AnchorWatchActivity extends Activity
             super.onDraw(canvas);
             drawer.setCanvas(canvas);
             String text = state.name()+" "+index;
-            drawer.drawText(text, 5, 20);
+            drawer.drawLine(1, text);
             switch (state)
             {
                 case Gather:
                     drawer.drawPoints(points, index);
                     break;
                 case Initial:
-                    CircleFitter.initialCenter(points, center);
-                    circleFitter = new CircleFitter(center);
-                    drawer.drawPoints(points);
-                    state = State.Optimize;
-                    postInvalidateDelayed(2000);
+                    double radius = CircleFitter.initialCenter(points, center);
+                    if (Double.isNaN(radius) || radius > Cable)
+                    {
+                        state = State.Gather;
+                        drawer.drawLine(1, "No Fix");
+                    }
+                    else
+                    {
+                        circleFitter = new CircleFitter(center);
+                        drawer.drawPoints(points);
+                        state = State.Optimize;
+                        drawer.drawLine(1, "Initial Fix");
+                        postInvalidateDelayed(2000);
+                    }
                     break;
                 case Optimize:
                     circleFitter.fit(points);
-                    drawer.drawPoints(points);
-                    state = State.Filter;
-                    postInvalidateDelayed(2000);
+                    if (circleFitter.getRadius() < Cable)
+                    {
+                        drawer.drawPoints(points);
+                        state = State.Filter;
+                        drawer.drawLine(1, "Fix1");
+                        postInvalidateDelayed(2000);
+                    }
+                    else
+                    {
+                        state = State.Gather;
+                        drawer.drawLine(1, "No Fix");
+                    }
                     break;
                 case Filter:
                     CircleFitter.filterInnerPoints(points, center);
@@ -103,10 +122,17 @@ public class AnchorWatchActivity extends Activity
                     break;
                 case Optimize2:
                     circleFitter.fit(points);
+                    if (circleFitter.getRadius() < Cable)
+                    {
+                        drawer.drawLine(1, "Fix1");
+                    }
+                    else
+                    {
+                        drawer.drawLine(1, "No Fix");
+                    }
                     drawer.drawPoints(points);
                     state = State.Gather;
                     points.reshape(Size, 2);
-                    index = 0;
                     break;
             }
             if (circleFitter != null)
@@ -117,7 +143,7 @@ public class AnchorWatchActivity extends Activity
 
         public void onLocationChanged(Location location)
         {
-            Log.d("AW", location.toString());
+            Log.d("AnchorWatch", location.toString());
             if (state == State.Gather)
             {
                 double latitude = location.getLatitude();
@@ -128,6 +154,7 @@ public class AnchorWatchActivity extends Activity
                 index++;
                 if (index == points.numRows)
                 {
+                    index = 0;
                     if (circleFitter == null)
                     {
                         state = State.Initial;
