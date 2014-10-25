@@ -17,7 +17,7 @@ import org.vesalainen.util.math.CircleFitter;
 
 public class AnchorWatchActivity extends Activity
 {
-    private static final int Size = 40;
+    private static final int Size = 10;
     private enum State {Gather, Initial, Optimize, Filter, Optimize2 }; 
     private LocationManager locationManager;
     private AnchorView anchorView;
@@ -58,9 +58,9 @@ public class AnchorWatchActivity extends Activity
 
     private class AnchorView extends View implements LocationListener
     {
-        private Drawer drawer = new Drawer();
-        private DenseMatrix64F points = new DenseMatrix64F(Size, 2);
-        private DenseMatrix64F center = new DenseMatrix64F(2, 1);
+        private final Drawer drawer = new Drawer();
+        private final DenseMatrix64F points = new DenseMatrix64F(Size, 2);
+        private final DenseMatrix64F center = new DenseMatrix64F(2, 1);
         private int index;
         private State state = State.Gather;
         private CircleFitter circleFitter;
@@ -117,6 +117,7 @@ public class AnchorWatchActivity extends Activity
 
         public void onLocationChanged(Location location)
         {
+            Log.d("AW", location.toString());
             if (state == State.Gather)
             {
                 double latitude = location.getLatitude();
@@ -206,7 +207,7 @@ public class AnchorWatchActivity extends Activity
         {
             DenseMatrix64F center = circleFitter.getCenter();
             float x = (float)center.get(0, 0);
-            float y = (float)center.get(0, 1);
+            float y = (float)center.get(1, 0);
             float radius = (float) circleFitter.getRadius();
             drawLine(4, "center=("+x+", "+y+") r="+radius);
             drawLine(5, "Init cost="+circleFitter.getLevenbergMarquardt().getInitialCost());
