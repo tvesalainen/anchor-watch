@@ -8,31 +8,27 @@ import android.content.ServiceConnection;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.ArcShape;
-import android.location.Location;
-import android.location.LocationListener;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import org.ejml.data.DenseMatrix64F;
 import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
 import org.vesalainen.math.Circle;
-import org.vesalainen.math.CircleFitter;
 import org.vesalainen.math.ConvexPolygon;
 import org.vesalainen.math.Sector;
 import org.vesalainen.navi.AnchorWatch.Watcher;
 import org.vesalainen.ui.AbstractView;
 import org.vesalainen.ui.MouldableSector;
+import org.vesalainen.ui.MouldableSector.Cursor;
 
 public class AnchorWatchActivity extends Activity
 {
-    private static final String AnchorWatch = "AnchorWatch";
+    public static final String AnchorWatch = "AnchorWatch";
     private AnchorView anchorView;
     private AnchorWatchBinder binder;
     private boolean bound;
@@ -118,17 +114,36 @@ public class AnchorWatchActivity extends Activity
 
     private class AnchorView extends View implements Watcher
     {
-
+        private final Paint pointPaint;
+        private final Paint areaPaint;
+        private final Paint backgroundPaint;
+        private final Paint estimatedPaint;
+        private final Paint manualPaint;
         private final Drawer drawer = new Drawer();
         private double lastX;
         private double lastY;
         private ConvexPolygon area;
         private Circle estimated;
         private MouldableSector safe;
+        private Cursor cursor;
 
         public AnchorView(Context context)
         {
             super(context);
+            backgroundPaint = new Paint();
+            backgroundPaint.setStyle(Paint.Style.FILL);
+            pointPaint = new Paint();
+            pointPaint.setStyle(Paint.Style.STROKE);
+            pointPaint.setARGB(255, 255, 255, 255);
+            areaPaint = new Paint();
+            areaPaint.setStyle(Paint.Style.STROKE);
+            areaPaint.setARGB(255, 0, 0, 255);
+            estimatedPaint = new Paint();
+            estimatedPaint.setStyle(Paint.Style.STROKE);
+            estimatedPaint.setARGB(255, 255, 0, 0);
+            manualPaint = new Paint();
+            manualPaint.setStyle(Paint.Style.STROKE);
+            manualPaint.setARGB(255, 0, 255, 0);
         }
 
         @Override
@@ -137,18 +152,18 @@ public class AnchorWatchActivity extends Activity
             super.onDraw(canvas);
             canvas.drawARGB(255, 0, 0, 0);
             drawer.setCanvas(canvas);
-            drawer.drawPoint(lastX, lastX);
+            drawer.drawPoint(lastX, lastX, pointPaint);
             if (area != null)
             {
-                drawer.drawPolygon(area);
+                drawer.drawPolygon(area, areaPaint);
             }
             if (estimated != null)
             {
-                drawer.drawCircle(estimated);
+                drawer.drawCircle(estimated, estimatedPaint);
             }
             if (safe != null)
             {
-                drawer.drawSector(safe);
+                drawer.drawSector(safe, manualPaint);
             }
         }
 
@@ -156,9 +171,28 @@ public class AnchorWatchActivity extends Activity
         public boolean onTouchEvent(MotionEvent event)
         {
             int action = event.getAction();
+            double x = drawer.fromScreenX(event.getX());
+            double y = drawer.fromScreenY(event.getY());
             switch (action)
             {
                 case MotionEvent.ACTION_DOWN:
+                    if (safe != null)
+                    {
+                        cursor = safe.getCursor(x, y);
+                        Log.d(AnchorWatch, "down "+x+", "+y);
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (cursor != null)
+                    {
+                        cursor = cursor.update(x, y);
+                        Log.d(AnchorWatch, "move "+x+", "+y);
+                        invalidate();
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    cursor = null;
+                    Log.d(AnchorWatch, "up "+x+", "+y);
                     break;
             }
             return true;
@@ -187,7 +221,7 @@ public class AnchorWatchActivity extends Activity
             lastX = x;
             lastY = y;
             drawer.updatePoint(x, y);
-            invalidate();
+            postInvalidate();
         }
 
         @Override
@@ -195,7 +229,7 @@ public class AnchorWatchActivity extends Activity
         {
             drawer.updatePolygon(area);
             this.area = area;
-            invalidate();
+            postInvalidate();
         }
 
         @Override
@@ -208,7 +242,7 @@ public class AnchorWatchActivity extends Activity
         {
             drawer.updateCircle(estimated);
             this.estimated = estimated;
-            invalidate();
+            postInvalidate();
         }
 
         @Override
@@ -216,7 +250,7 @@ public class AnchorWatchActivity extends Activity
         {
             drawer.updateCircle(safe);
             this.safe = safe;
-            invalidate();
+            postInvalidate();
         }
 
     }
@@ -224,26 +258,11 @@ public class AnchorWatchActivity extends Activity
     private class Drawer extends AbstractView
     {
 
-        private final Paint white;
-        private final Paint black;
-        private final Paint red;
-        private final Paint green;
         private Canvas canvas;
 
         public Drawer()
         {
             super();
-            black = new Paint();
-            black.setStyle(Paint.Style.FILL);
-            white = new Paint();
-            white.setStyle(Paint.Style.STROKE);
-            white.setARGB(255, 255, 255, 255);
-            red = new Paint();
-            red.setStyle(Paint.Style.STROKE);
-            red.setARGB(255, 255, 0, 0);
-            green = new Paint();
-            green.setStyle(Paint.Style.STROKE);
-            green.setARGB(255, 0, 255, 0);
         }
 
         private void setCanvas(Canvas canvas)
@@ -252,48 +271,55 @@ public class AnchorWatchActivity extends Activity
             setScreen(canvas.getWidth(), canvas.getHeight());
         }
 
-        private void drawPoint(double x, double y)
+        private void drawPoint(double x, double y, Paint paint)
         {
             float tx = (float) toScreenX(x);
             float ty = (float) toScreenY(y);
-            canvas.drawCircle(tx, ty, 5, white);
+            canvas.drawCircle(tx, ty, 5, paint);
         }
-        private void drawCircle(Circle circle)
+        private void drawCircle(Circle circle, Paint paint)
         {
             float sx = (float) toScreenX(circle.getX());
             float sy = (float) toScreenY(circle.getY());
             float sr = (float) scale(circle.getRadius());
-            canvas.drawCircle(sx, sy, sr, green);
+            canvas.drawCircle(sx, sy, sr, paint);
         }
-        private void drawSector(Sector sector)
+        private void drawSector(Sector sector, Paint paint)
         {
-            float x = (float) toScreenX(sector.getX());
-            float y = (float) toScreenY(sector.getY());
-            float r = (float) scale(sector.getRadius());
-            RectF rect = new RectF(
-                    x-r, 
-                    y-r, 
-                    x+r, 
-                    y+r
-            );
-            canvas.drawArc(
-                    rect, 
-                    (float)Math.toDegrees(sector.getRightAngle()), 
-                    (float)Math.toDegrees(sector.getLeftAngle()),
-                    true, 
-                    red);
+            if (sector.isCircle())
+            {
+                drawCircle(sector, paint);
+            }
+            else
+            {
+                float sx = (float) toScreenX(sector.getX());
+                float sy = (float) toScreenY(sector.getY());
+                float sr = (float) scale(sector.getRadius());
+                RectF rect = new RectF(
+                        sx-sr, 
+                        sy-sr, 
+                        sx+sr, 
+                        sy+sr
+                );
+                canvas.drawArc(
+                        rect, 
+                        (float)Math.toDegrees(sector.getRightAngle()), 
+                        (float)Math.toDegrees(sector.getLeftAngle()),
+                        true, 
+                        paint);
+            }
         }
-        private void drawText(String text, int x, int y)
+        private void drawText(String text, int x, int y, Paint paint)
         {
-            canvas.drawText(text, x, y, white);
+            canvas.drawText(text, x, y, paint);
         }
 
-        private void drawText(int line, String text)
+        private void drawText(int line, String text, Paint paint)
         {
-            canvas.drawText(text, 5, 20 * (line + 1), white);
+            canvas.drawText(text, 5, 20 * (line + 1), paint);
         }
 
-        private void drawPolygon(ConvexPolygon area)
+        private void drawPolygon(ConvexPolygon area, Paint paint)
         {
             DenseMatrix64F m = area.points;
             double[] d = m.data;
@@ -306,7 +332,7 @@ public class AnchorWatchActivity extends Activity
                 {
                     int x2 = (int) toScreenX(d[2*r]);
                     int y2 = (int) toScreenY(d[2*r+1]);
-                    canvas.drawLine(x1, y1, x2, y2, white);
+                    canvas.drawLine(x1, y1, x2, y2, paint);
                     x1 = x2;
                     y1 = y2;
                 }

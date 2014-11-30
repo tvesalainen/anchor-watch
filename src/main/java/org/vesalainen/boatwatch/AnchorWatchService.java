@@ -26,9 +26,14 @@ import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.widget.Toast;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.navi.AnchorWatch.Watcher;
+import org.vesalainen.navi.AnchorageSimulator;
 
 /**
  *
@@ -39,6 +44,8 @@ public class AnchorWatchService extends Service implements LocationListener
     private final AnchorWatch watch = new AnchorWatch();
     private LocationManager locationManager;
     private final IBinder binder = new AnchorWatchBinder();
+    private AnchorageSimulator simulator;
+    private boolean simulate = true;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
@@ -52,8 +59,23 @@ public class AnchorWatchService extends Service implements LocationListener
     {
         super.onCreate();
         Toast.makeText(this, "onCreate", Toast.LENGTH_SHORT).show();
-        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
+        if (!simulate)
+        {
+            locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
+        }
+        else
+        {
+            simulator = new AnchorageSimulator();
+            try
+            {
+                simulator.simulate(watch, 1000, true);
+            }
+            catch (IOException ex)
+            {
+                Log.e(AnchorWatchActivity.AnchorWatch, ex.getMessage(), ex);
+            }
+        }
     }
 
     @Override
@@ -67,7 +89,10 @@ public class AnchorWatchService extends Service implements LocationListener
     public void onDestroy()
     {
         Toast.makeText(this, "onDestroy", Toast.LENGTH_SHORT).show();
-        locationManager.removeUpdates(this);
+        if (!simulate)
+        {
+            locationManager.removeUpdates(this);
+        }
         super.onDestroy();
     }
 
