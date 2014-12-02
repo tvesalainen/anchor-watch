@@ -25,6 +25,7 @@ import org.vesalainen.navi.AnchorWatch.Watcher;
 import org.vesalainen.ui.AbstractView;
 import org.vesalainen.ui.MouldableSector;
 import org.vesalainen.ui.MouldableSector.Cursor;
+import org.vesalainen.util.navi.Angle;
 
 public class AnchorWatchActivity extends Activity
 {
@@ -186,7 +187,8 @@ public class AnchorWatchActivity extends Activity
                     if (cursor != null)
                     {
                         cursor = cursor.update(x, y);
-                        Log.d(AnchorWatch, "move "+x+", "+y);
+                        Log.d(AnchorWatch, "leftAngle="+Math.toDegrees(safe.getLeftAngle()));
+                        Log.d(AnchorWatch, "rightAngle="+Math.toDegrees(safe.getRightAngle()));
                         invalidate();
                     }
                     break;
@@ -301,12 +303,12 @@ public class AnchorWatchActivity extends Activity
                         sx+sr, 
                         sy+sr
                 );
-                canvas.drawArc(
-                        rect, 
-                        (float)Math.toDegrees(sector.getRightAngle()), 
-                        (float)Math.toDegrees(sector.getLeftAngle()),
-                        true, 
-                        paint);
+                float la = (float) sector.getLeftAngle();
+                float ra = (float) sector.getRightAngle();
+                float sweep = 360-(float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(ra, la)));
+                float dr = 360-(float) Math.toDegrees(ra);
+                Log.d(AnchorWatch, "drawArc "+dr+", "+sweep);
+                canvas.drawArc(rect, dr, sweep, true, paint);
             }
         }
         private void drawText(String text, int x, int y, Paint paint)
