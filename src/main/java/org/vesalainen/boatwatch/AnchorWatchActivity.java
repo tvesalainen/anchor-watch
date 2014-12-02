@@ -153,7 +153,7 @@ public class AnchorWatchActivity extends Activity
             super.onDraw(canvas);
             canvas.drawARGB(255, 0, 0, 0);
             drawer.setCanvas(canvas);
-            drawer.drawPoint(lastX, lastX, pointPaint);
+            drawer.drawPoint(lastX, lastY, pointPaint);
             if (area != null)
             {
                 drawer.drawPolygon(area, areaPaint);
@@ -180,21 +180,37 @@ public class AnchorWatchActivity extends Activity
                     if (safe != null)
                     {
                         cursor = safe.getCursor(x, y);
-                        Log.d(AnchorWatch, "down "+x+", "+y);
+                        invalidate();
                     }
                     break;
                 case MotionEvent.ACTION_MOVE:
                     if (cursor != null)
                     {
                         cursor = cursor.update(x, y);
-                        Log.d(AnchorWatch, "leftAngle="+Math.toDegrees(safe.getLeftAngle()));
-                        Log.d(AnchorWatch, "rightAngle="+Math.toDegrees(safe.getRightAngle()));
                         invalidate();
                     }
                     break;
                 case MotionEvent.ACTION_UP:
-                    cursor = null;
-                    Log.d(AnchorWatch, "up "+x+", "+y);
+                    if (cursor != null)
+                    {
+                        cursor.ready(x, y);
+                        cursor = null;
+                    }
+                    drawer.reset();
+                    drawer.updatePoint(lastX, lastY);
+                    if (area != null)
+                    {
+                        drawer.updatePolygon(area);
+                    }
+                    if (estimated != null)
+                    {
+                        drawer.updateCircle(estimated);
+                    }
+                    if (safe != null)
+                    {
+                        drawer.updateCircle(safe);
+                    }
+                    invalidate();
                     break;
             }
             return true;
@@ -305,22 +321,28 @@ public class AnchorWatchActivity extends Activity
                 );
                 float la = (float) sector.getLeftAngle();
                 float ra = (float) sector.getRightAngle();
-                float sweep = 360-(float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(ra, la)));
-                float dr = 360-(float) Math.toDegrees(ra);
-                Log.d(AnchorWatch, "drawArc "+dr+", "+sweep);
-                canvas.drawArc(rect, dr, sweep, true, paint);
+                float sweep = 360-(float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(la, ra)));
+                float dl = 360-(float) Math.toDegrees(la);
+                Log.d(AnchorWatch, "drawArc "+dl+", "+sweep);
+                canvas.drawArc(rect, dl, sweep, true, paint);
             }
         }
-        private void drawText(String text, int x, int y, Paint paint)
+        private void drawText(String text, double x, double y, Paint paint)
         {
-            canvas.drawText(text, x, y, paint);
+            int ix = (int) toScreenX(x);
+            int iy = (int) toScreenY(y);
+            canvas.drawText(text, ix, iy, paint);
         }
 
-        private void drawText(int line, String text, Paint paint)
+        private void drawLine(double x1, double y1, double x2, double y2, Paint paint)
         {
-            canvas.drawText(text, 5, 20 * (line + 1), paint);
+            int ix1 = (int) toScreenX(x1);
+            int iy1 = (int) toScreenY(y1);
+            int ix2 = (int) toScreenX(x2);
+            int iy2 = (int) toScreenY(y2);
+            canvas.drawLine(ix1, iy1, ix2, iy2, paint);
         }
-
+        
         private void drawPolygon(ConvexPolygon area, Paint paint)
         {
             DenseMatrix64F m = area.points;
