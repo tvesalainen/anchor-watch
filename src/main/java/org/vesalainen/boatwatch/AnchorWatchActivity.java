@@ -21,6 +21,7 @@ import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
 import org.vesalainen.math.Circle;
 import org.vesalainen.math.ConvexPolygon;
 import org.vesalainen.math.Sector;
+import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.navi.AnchorWatch.Watcher;
 import org.vesalainen.ui.AbstractView;
 import org.vesalainen.ui.MouldableSector;
@@ -29,7 +30,7 @@ import org.vesalainen.util.navi.Angle;
 
 public class AnchorWatchActivity extends Activity
 {
-    public static final String AnchorWatch = "AnchorWatch";
+    public static final String AW = "AnchorWatch";
     private AnchorView anchorView;
     private AnchorWatchBinder binder;
     private boolean bound;
@@ -39,7 +40,7 @@ public class AnchorWatchActivity extends Activity
         @Override
         public void onServiceConnected(ComponentName name, IBinder service)
         {
-            Log.d(AnchorWatch, "onServiceConnected "+anchorView);
+            Log.d(AW, "onServiceConnected "+anchorView);
             binder = (AnchorWatchBinder) service;
             binder.addWatcher(anchorView);
             bound = true;
@@ -65,7 +66,7 @@ public class AnchorWatchActivity extends Activity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        Log.d(AnchorWatch, "onCreate");
+        Log.d(AW, "onCreate");
         
         anchorView = new AnchorView(getBaseContext());
         setContentView(anchorView);
@@ -79,7 +80,7 @@ public class AnchorWatchActivity extends Activity
     protected void onStart()
     {
         super.onStart();
-        Log.d(AnchorWatch, "onStart");
+        Log.d(AW, "onStart");
         Intent intent = new Intent(this, AnchorWatchService.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);        
     }
@@ -165,6 +166,12 @@ public class AnchorWatchActivity extends Activity
             if (safe != null)
             {
                 drawer.drawSector(safe, manualPaint);
+                double x = safe.getX();
+                double y = safe.getY();
+                double r = safe.getRadius();
+                drawer.drawLine(x, y, x+r, y, manualPaint);
+                String txt = String.format("%.0fm", AnchorWatch.toMeters(r));
+                drawer.drawText(txt, x+r/2, y, manualPaint);
             }
         }
 
@@ -323,7 +330,7 @@ public class AnchorWatchActivity extends Activity
                 float ra = (float) sector.getRightAngle();
                 float sweep = 360-(float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(la, ra)));
                 float dl = 360-(float) Math.toDegrees(la);
-                Log.d(AnchorWatch, "drawArc "+dl+", "+sweep);
+                Log.d(AW, "drawArc "+dl+", "+sweep);
                 canvas.drawArc(rect, dl, sweep, true, paint);
             }
         }

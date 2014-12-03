@@ -73,7 +73,7 @@ public class AnchorWatchService extends Service implements LocationListener
             }
             catch (IOException ex)
             {
-                Log.e(AnchorWatchActivity.AnchorWatch, ex.getMessage(), ex);
+                Log.e(AnchorWatchActivity.AW, ex.getMessage(), ex);
             }
         }
     }
