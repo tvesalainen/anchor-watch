@@ -20,12 +20,15 @@ package org.vesalainen.boatwatch;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 import java.io.IOException;
@@ -38,7 +41,7 @@ import org.vesalainen.navi.AnchorageSimulator;
  *
  * @author Timo Vesalainen
  */
-public class AnchorWatchService extends Service implements LocationListener
+public class AnchorWatchService extends Service implements LocationListener, OnSharedPreferenceChangeListener
 {
     private final AnchorWatch watch = new AnchorWatch();
     private LocationManager locationManager;
@@ -58,6 +61,8 @@ public class AnchorWatchService extends Service implements LocationListener
     {
         super.onCreate();
         Toast.makeText(this, "onCreate", Toast.LENGTH_SHORT).show();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        simulate = sharedPreferences.getBoolean(SettingsFragment.Simulate, false);
         if (!simulate)
         {
             locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -75,6 +80,7 @@ public class AnchorWatchService extends Service implements LocationListener
                 Log.e(LogTitle, ex.getMessage(), ex);
             }
         }
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -92,6 +98,8 @@ public class AnchorWatchService extends Service implements LocationListener
         {
             locationManager.removeUpdates(this);
         }
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
         super.onDestroy();
     }
 
@@ -114,6 +122,41 @@ public class AnchorWatchService extends Service implements LocationListener
     @Override
     public void onProviderDisabled(String provider)
     {
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
+    {
+        switch (key)
+        {
+            case SettingsFragment.Simulate:
+                boolean simul = sharedPreferences.getBoolean(SettingsFragment.Simulate, false);
+                if (simul != simulate)
+                {
+                    watch.reset();
+                    if (simulate)
+                    {
+                        simulator.cancel();
+                        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
+                    }
+                    else
+                    {
+                        locationManager.removeUpdates(this);
+                        simulator = new AnchorageSimulator();
+                        try
+                        {
+                            simulator.simulate(watch, 1000, true);
+                        }
+                        catch (IOException ex)
+                        {
+                            Log.e(LogTitle, ex.getMessage(), ex);
+                        }
+                    }
+                    simulate = simul;
+                }
+                break;
+        }
     }
     
     public class AnchorWatchBinder extends Binder

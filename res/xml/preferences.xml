@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <CheckBoxPreference
-        android:key="simulate"
+        android:key="pref_simulate"
         android:title="@string/simulate"
         android:summary="@string/simulate_sum"
         android:defaultValue="false" />

@@ -26,7 +26,8 @@ import android.preference.PreferenceFragment;
  */
 public class SettingsFragment extends PreferenceFragment
 {
-
+    public static final String Simulate = "pref_simulate";
+    
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
