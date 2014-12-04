@@ -10,8 +10,10 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceFragment;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import java.util.HashMap;
@@ -30,6 +32,7 @@ import org.vesalainen.util.navi.Angle;
 
 public class AnchorWatchActivity extends Activity
 {
+
     public static final String AW = "AnchorWatch";
     private AnchorView anchorView;
     private AnchorWatchBinder binder;
@@ -40,20 +43,22 @@ public class AnchorWatchActivity extends Activity
         @Override
         public void onServiceConnected(ComponentName name, IBinder service)
         {
-            Log.d(AW, "onServiceConnected "+anchorView);
+            Log.d(AW, "onServiceConnected " + anchorView);
             binder = (AnchorWatchBinder) service;
             binder.addWatcher(anchorView);
             bound = true;
         }
+
         @Override
         public void onServiceDisconnected(ComponentName name)
         {
             binder.removeWatcher(anchorView);
             bound = false;
         }
-           
+
     };
     private Intent serviceIntent;
+
     /**
      * Called when the activity is first created.
      *
@@ -67,13 +72,13 @@ public class AnchorWatchActivity extends Activity
     {
         super.onCreate(savedInstanceState);
         Log.d(AW, "onCreate");
-        
+
         anchorView = new AnchorView(getBaseContext());
         setContentView(anchorView);
 
         serviceIntent = new Intent(this, AnchorWatchService.class);
         startService(serviceIntent);
-        
+
     }
 
     @Override
@@ -82,7 +87,7 @@ public class AnchorWatchActivity extends Activity
         super.onStart();
         Log.d(AW, "onStart");
         Intent intent = new Intent(this, AnchorWatchService.class);
-        bindService(intent, connection, Context.BIND_AUTO_CREATE);        
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -105,6 +110,21 @@ public class AnchorWatchActivity extends Activity
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        switch (item.getItemId())
+        {
+            case R.id.action_settings:
+            // Display the fragment as the main content.
+                getFragmentManager().beginTransaction()
+                        .replace(android.R.id.content, new SettingsFragment())
+                        .commit();    
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     protected void onDestroy()
     {
         if (serviceIntent != null)
@@ -116,6 +136,7 @@ public class AnchorWatchActivity extends Activity
 
     private class AnchorView extends View implements Watcher
     {
+
         private final Paint pointPaint;
         private final Paint areaPaint;
         private final Paint backgroundPaint;
@@ -169,9 +190,9 @@ public class AnchorWatchActivity extends Activity
                 double x = safe.getX();
                 double y = safe.getY();
                 double r = safe.getRadius();
-                drawer.drawLine(x, y, x+r, y, manualPaint);
+                drawer.drawLine(x, y, x + r, y, manualPaint);
                 String txt = String.format("%.0fm", AnchorWatch.toMeters(r));
-                drawer.drawText(txt, x+r/2, y, manualPaint);
+                drawer.drawText(txt, x + r / 2, y, manualPaint);
             }
         }
 
@@ -302,6 +323,7 @@ public class AnchorWatchActivity extends Activity
             float ty = (float) toScreenY(y);
             canvas.drawCircle(tx, ty, 5, paint);
         }
+
         private void drawCircle(Circle circle, Paint paint)
         {
             float sx = (float) toScreenX(circle.getX());
@@ -309,6 +331,7 @@ public class AnchorWatchActivity extends Activity
             float sr = (float) scale(circle.getRadius());
             canvas.drawCircle(sx, sy, sr, paint);
         }
+
         private void drawSector(Sector sector, Paint paint)
         {
             if (sector.isCircle())
@@ -321,19 +344,20 @@ public class AnchorWatchActivity extends Activity
                 float sy = (float) toScreenY(sector.getY());
                 float sr = (float) scale(sector.getRadius());
                 RectF rect = new RectF(
-                        sx-sr, 
-                        sy-sr, 
-                        sx+sr, 
-                        sy+sr
+                        sx - sr,
+                        sy - sr,
+                        sx + sr,
+                        sy + sr
                 );
                 float la = (float) sector.getLeftAngle();
                 float ra = (float) sector.getRightAngle();
-                float sweep = 360-(float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(la, ra)));
-                float dl = 360-(float) Math.toDegrees(la);
-                Log.d(AW, "drawArc "+dl+", "+sweep);
+                float sweep = 360 - (float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(la, ra)));
+                float dl = 360 - (float) Math.toDegrees(la);
+                Log.d(AW, "drawArc " + dl + ", " + sweep);
                 canvas.drawArc(rect, dl, sweep, true, paint);
             }
         }
+
         private void drawText(String text, double x, double y, Paint paint)
         {
             int ix = (int) toScreenX(x);
@@ -349,7 +373,7 @@ public class AnchorWatchActivity extends Activity
             int iy2 = (int) toScreenY(y2);
             canvas.drawLine(ix1, iy1, ix2, iy2, paint);
         }
-        
+
         private void drawPolygon(ConvexPolygon area, Paint paint)
         {
             DenseMatrix64F m = area.points;
@@ -357,12 +381,12 @@ public class AnchorWatchActivity extends Activity
             int rows = m.numRows;
             if (rows >= 2)
             {
-                int x1 = (int) toScreenX(d[2*(rows-1)]);
-                int y1 = (int) toScreenY(d[2*(rows-1)+1]);
-                for (int r=0;r<rows;r++)
+                int x1 = (int) toScreenX(d[2 * (rows - 1)]);
+                int y1 = (int) toScreenY(d[2 * (rows - 1) + 1]);
+                for (int r = 0; r < rows; r++)
                 {
-                    int x2 = (int) toScreenX(d[2*r]);
-                    int y2 = (int) toScreenY(d[2*r+1]);
+                    int x2 = (int) toScreenX(d[2 * r]);
+                    int y2 = (int) toScreenY(d[2 * r + 1]);
                     canvas.drawLine(x1, y1, x2, y2, paint);
                     x1 = x2;
                     y1 = y2;
@@ -372,4 +396,18 @@ public class AnchorWatchActivity extends Activity
 
     }
 
+    public static class SettingsFragment extends PreferenceFragment
+    {
+
+        @Override
+        public void onCreate(Bundle savedInstanceState)
+        {
+            super.onCreate(savedInstanceState);
+
+            // Load the preferences from an XML resource
+            addPreferencesFromResource(R.xml.preferences);
+        }
+    
+
+    }
 }
