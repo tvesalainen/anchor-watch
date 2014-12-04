@@ -29,8 +29,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import static org.vesalainen.boatwatch.BoatWatchConstants.*;
 import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.navi.AnchorWatch.Watcher;
 import org.vesalainen.navi.AnchorageSimulator;
@@ -73,7 +72,7 @@ public class AnchorWatchService extends Service implements LocationListener
             }
             catch (IOException ex)
             {
-                Log.e(AnchorWatchActivity.AW, ex.getMessage(), ex);
+                Log.e(LogTitle, ex.getMessage(), ex);
             }
         }
     }
