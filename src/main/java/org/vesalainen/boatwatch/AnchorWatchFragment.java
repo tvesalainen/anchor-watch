@@ -6,30 +6,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceFragment;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import org.ejml.data.DenseMatrix64F;
 import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
-import org.vesalainen.math.Circle;
-import org.vesalainen.math.ConvexPolygon;
-import org.vesalainen.math.Sector;
-import org.vesalainen.navi.AnchorWatch;
-import org.vesalainen.navi.AnchorWatch.Watcher;
-import org.vesalainen.ui.AbstractView;
-import org.vesalainen.ui.MouldableSector;
-import org.vesalainen.ui.MouldableSector.Cursor;
-import org.vesalainen.util.navi.Angle;
 
 public class AnchorWatchFragment extends Fragment
 {
@@ -60,16 +44,9 @@ public class AnchorWatchFragment extends Fragment
     private Activity activity;
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState)
-    {
-        super.onActivityCreated(savedInstanceState);
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
-        anchorView = (AnchorView) inflater.inflate(R.layout.anchor_view, container, false);
-        return anchorView;
+        return inflater.inflate(R.layout.anchor_view, container, false);
     }
 
 
@@ -99,6 +76,11 @@ public class AnchorWatchFragment extends Fragment
     {
         super.onStart();
         
+        anchorView = (AnchorView) activity.findViewById(R.id.anchor_view);
+        if (anchorView == null)
+        {
+            Log.e(LogTitle, "AnchorView not found for id="+R.id.anchor_view);
+        }
         Intent intent = new Intent(activity, AnchorWatchService.class);
         activity.bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }

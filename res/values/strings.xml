@@ -5,5 +5,7 @@
     <string name="action_settings">Settings</string>
     <string name="simulate">Simulate</string>
     <string name="simulate_sum">Simulates anchorage without using GPS</string>
+    <string name="alarm_tone">Alarm Tone</string>
+    <string name="alarm_tone_sum">Tone that sounds when anchor is not holding</string>
 
 </resources>

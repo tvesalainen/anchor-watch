@@ -21,13 +21,24 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.ejml.data.DenseMatrix64F;
 import static org.vesalainen.boatwatch.BoatWatchConstants.LogTitle;
+import static org.vesalainen.boatwatch.Settings.AlarmTone;
+import org.vesalainen.boatwatch.Settings.Setting;
+import static org.vesalainen.boatwatch.Settings.Simulate;
 import org.vesalainen.math.Circle;
 import org.vesalainen.math.ConvexPolygon;
 import org.vesalainen.math.Sector;
@@ -54,6 +65,9 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     private Circle estimated;
     private MouldableSector safe;
     private MouldableSector.Cursor cursor;
+    private boolean simulate;
+    private String alarmTone;
+    private MediaPlayer mediaPlayer = new MediaPlayer();
 
     public AnchorView(Context context)
     {
@@ -68,6 +82,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     public AnchorView(Context context, AttributeSet attrs, int defStyle)
     {
         super(context, attrs, defStyle);
+        Settings.attach(context, this);
         backgroundPaint = new Paint();
         backgroundPaint.setStyle(Paint.Style.FILL);
         pointPaint = new Paint();
@@ -84,12 +99,30 @@ public class AnchorView extends View implements AnchorWatch.Watcher
         manualPaint.setARGB(255, 0, 255, 0);
     }
 
+    @Setting(Simulate)
+    public void setSimulate(boolean simulate)
+    {
+        Log.d(LogTitle, "setSimulate("+simulate+")");
+        this.simulate = simulate;
+    }
+    
+    @Setting(AlarmTone)
+    public void setAlarmTone(String alarmTone)
+    {
+        Log.d(LogTitle, "setAlarmTone("+alarmTone+")");
+        this.alarmTone = alarmTone;
+    }
+    
     @Override
     protected void onDraw(Canvas canvas)
     {
         super.onDraw(canvas);
         canvas.drawARGB(255, 0, 0, 0);
         drawer.setCanvas(canvas);
+        if (simulate)
+        {
+            drawer.drawText("Simulate", (int)getX()/2, (int)getY()/2, pointPaint);
+        }
         drawer.drawPoint(lastX, lastY, pointPaint);
         if (area != null)
         {
@@ -174,6 +207,19 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     @Override
     public void alarm(double distance)
     {
+        if (alarmTone != null)
+        {
+            try {
+                mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
+                mediaPlayer.setDataSource(alarmTone);
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+            }
+            catch (IOException | IllegalArgumentException | SecurityException | IllegalStateException ex) 
+            {
+                Log.e(LogTitle, ex.getMessage(), ex);
+            }
+        }
     }
 
     @Override
@@ -276,6 +322,11 @@ public class AnchorView extends View implements AnchorWatch.Watcher
             int ix = (int) toScreenX(x);
             int iy = (int) toScreenY(y);
             canvas.drawText(text, ix, iy, paint);
+        }
+
+        private void drawText(String text, int x, int y, Paint paint)
+        {
+            canvas.drawText(text, x, y, paint);
         }
 
         private void drawLine(double x1, double y1, double x2, double y2, Paint paint)

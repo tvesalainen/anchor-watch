@@ -33,6 +33,8 @@ import android.util.Log;
 import android.widget.Toast;
 import java.io.IOException;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
+import org.vesalainen.boatwatch.Settings.Setting;
+import static org.vesalainen.boatwatch.Settings.Simulate;
 import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.navi.AnchorWatch.Watcher;
 import org.vesalainen.navi.AnchorageSimulator;
@@ -41,7 +43,7 @@ import org.vesalainen.navi.AnchorageSimulator;
  *
  * @author Timo Vesalainen
  */
-public class AnchorWatchService extends Service implements LocationListener, OnSharedPreferenceChangeListener
+public class AnchorWatchService extends Service implements LocationListener
 {
     private final AnchorWatch watch = new AnchorWatch();
     private LocationManager locationManager;
@@ -61,26 +63,7 @@ public class AnchorWatchService extends Service implements LocationListener, OnS
     {
         super.onCreate();
         Toast.makeText(this, "onCreate", Toast.LENGTH_SHORT).show();
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        simulate = sharedPreferences.getBoolean(SettingsFragment.Simulate, false);
-        if (!simulate)
-        {
-            locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
-        }
-        else
-        {
-            simulator = new AnchorageSimulator();
-            try
-            {
-                simulator.simulate(watch, 1000, true);
-            }
-            catch (IOException ex)
-            {
-                Log.e(LogTitle, ex.getMessage(), ex);
-            }
-        }
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        Settings.attach(this, this);
     }
 
     @Override
@@ -98,8 +81,7 @@ public class AnchorWatchService extends Service implements LocationListener, OnS
         {
             locationManager.removeUpdates(this);
         }
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+        Settings.detach(this);
         super.onDestroy();
     }
 
@@ -123,39 +105,37 @@ public class AnchorWatchService extends Service implements LocationListener, OnS
     public void onProviderDisabled(String provider)
     {
     }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
+    @Setting(Simulate)
+    public void setSimulate(boolean simulate)
     {
-        switch (key)
+        Log.d(LogTitle, "setSimulate("+simulate+")");
+        watch.reset();
+        if (simulate)
         {
-            case SettingsFragment.Simulate:
-                boolean simul = sharedPreferences.getBoolean(SettingsFragment.Simulate, false);
-                if (simul != simulate)
-                {
-                    watch.reset();
-                    if (simulate)
-                    {
-                        simulator.cancel();
-                        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
-                    }
-                    else
-                    {
-                        locationManager.removeUpdates(this);
-                        simulator = new AnchorageSimulator();
-                        try
-                        {
-                            simulator.simulate(watch, 1000, true);
-                        }
-                        catch (IOException ex)
-                        {
-                            Log.e(LogTitle, ex.getMessage(), ex);
-                        }
-                    }
-                    simulate = simul;
-                }
-                break;
+            if (locationManager != null)
+            {
+                locationManager.removeUpdates(this);
+                locationManager = null;
+            }
+            simulator = new AnchorageSimulator();
+            try
+            {
+                simulator.simulate(watch, 1000, true);
+            }
+            catch (IOException ex)
+            {
+                Log.e(LogTitle, ex.getMessage(), ex);
+            }
+        }
+        else
+        {
+            if (simulator != null)
+            {
+                simulator.cancel();
+                simulator = null;
+            }
+            locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
         }
     }
     
