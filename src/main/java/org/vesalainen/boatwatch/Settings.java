@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
+import org.vesalainen.util.AbstractProvisioner;
 import org.vesalainen.util.HashMapList;
 import org.vesalainen.util.MapList;
 
@@ -44,104 +45,53 @@ public class Settings
     public static final String Simulate = "pref_simulate";
     public static final String AlarmTone = "pref_alarmtone";
     
-    private static final MapList<String,InstanceMethod> map = new HashMapList<>();
-    private static SharedPreferences.OnSharedPreferenceChangeListener listener;
+    public static Provisioner provisioner;
     
-    public static void attach(Context context, Object ob)
+    public static void attach(Context context)
     {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if (listener == null)
+        if (provisioner == null)
         {
-            listener = new Listener();
-            sharedPreferences.registerOnSharedPreferenceChangeListener(listener);
+            provisioner = new Provisioner(context);
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+            sharedPreferences.registerOnSharedPreferenceChangeListener(provisioner);
         }
-        Map<String, ?> all = sharedPreferences.getAll();
-        for (Method method : ob.getClass().getMethods())
+        provisioner.attach(context);
+    }
+    public static void detach(Context context)
+    {
+        if (provisioner != null)
         {
-            Setting setting = method.getAnnotation(Setting.class);
-            if (setting != null)
+            provisioner.detach(context);
+            if (provisioner.isEmpty())
             {
-                String name = setting.value();
-                Class<?>[] params = method.getParameterTypes();
-                if (params.length != 1)
-                {
-                    throw new IllegalArgumentException("@Setting("+name+") argument count != 1");
-                }
-                InstanceMethod instanceMethod = new InstanceMethod(ob, method);
-                Object value = all.get(name);
-                if (value != null)
-                {
-                    instanceMethod.invoke(value);
-                }
-                map.add(name, instanceMethod);
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+                sharedPreferences.unregisterOnSharedPreferenceChangeListener(provisioner);
+                provisioner = null;
             }
         }
     }
-    public static void detach(Object ob)
+    private static class Provisioner extends AbstractProvisioner<Context> implements OnSharedPreferenceChangeListener
     {
-        Iterator<Map.Entry<String, List<InstanceMethod>>> ki = map.entrySet().iterator();
-        while (ki.hasNext())
-        {
-            Map.Entry<String, List<InstanceMethod>> entry = ki.next();
-            Iterator<InstanceMethod> li = entry.getValue().iterator();
-            while (li.hasNext())
-            {
-                InstanceMethod im = li.next();
-                if (im.instance == ob)
-                {
-                    li.remove();
-                }
-            }
-            if (entry.getValue().isEmpty())
-            {
-                ki.remove();
-            }
-        }
-    }
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
-    public @interface Setting
-    {
-        String value();
-    }
-    private static class InstanceMethod
-    {
-        Object instance;
-        Method method;
+        private final Context context;
 
-        private InstanceMethod(Object instance, Method method)
+        public Provisioner(Context context)
         {
-            this.instance = instance;
-            this.method = method;
+            this.context = context;
         }
         
-        private void invoke(Object arg)
-        {
-            try
-            {
-                method.invoke(instance, arg);
-            }
-            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex)
-            {
-                Log.e(LogTitle, "Couldn't invoke "+method+" with arg="+arg, ex);
-            }
-        }
-    }
-    private static class Listener implements OnSharedPreferenceChangeListener
-    {
-
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
         {
             Map<String, ?> all = sharedPreferences.getAll();
-            for (InstanceMethod im : map.get(key))
-            {
-                Object value = all.get(key);
-                if (value != null)
-                {
-                    im.invoke(value);
-                }
-            }
+            setValue(key, all.get(key));
+        }
+        
+        @Override
+        public Object getValue(String name)
+        {
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+            Map<String, ?> all = sharedPreferences.getAll();
+            return all.get(name);
         }
         
     }

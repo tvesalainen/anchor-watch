@@ -23,21 +23,15 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.ejml.data.DenseMatrix64F;
 import static org.vesalainen.boatwatch.BoatWatchConstants.LogTitle;
 import static org.vesalainen.boatwatch.Settings.AlarmTone;
-import org.vesalainen.boatwatch.Settings.Setting;
 import static org.vesalainen.boatwatch.Settings.Simulate;
 import org.vesalainen.math.Circle;
 import org.vesalainen.math.ConvexPolygon;
@@ -45,6 +39,7 @@ import org.vesalainen.math.Sector;
 import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.ui.AbstractView;
 import org.vesalainen.ui.MouldableSector;
+import org.vesalainen.util.AbstractProvisioner.Setting;
 import org.vesalainen.util.navi.Angle;
 
 /**
@@ -82,7 +77,6 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     public AnchorView(Context context, AttributeSet attrs, int defStyle)
     {
         super(context, attrs, defStyle);
-        Settings.attach(context, this);
         backgroundPaint = new Paint();
         backgroundPaint.setStyle(Paint.Style.FILL);
         pointPaint = new Paint();
@@ -99,18 +93,10 @@ public class AnchorView extends View implements AnchorWatch.Watcher
         manualPaint.setARGB(255, 0, 255, 0);
     }
 
-    @Setting(Simulate)
     public void setSimulate(boolean simulate)
     {
         Log.d(LogTitle, "setSimulate("+simulate+")");
         this.simulate = simulate;
-    }
-    
-    @Setting(AlarmTone)
-    public void setAlarmTone(String alarmTone)
-    {
-        Log.d(LogTitle, "setAlarmTone("+alarmTone+")");
-        this.alarmTone = alarmTone;
     }
     
     @Override

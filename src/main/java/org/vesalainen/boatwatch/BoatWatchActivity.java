@@ -18,6 +18,7 @@
 package org.vesalainen.boatwatch;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -31,6 +32,7 @@ import static org.vesalainen.boatwatch.BoatWatchConstants.*;
  */
 public class BoatWatchActivity extends Activity
 {
+    private Intent serviceIntent;
 
     /**
      * Called when the activity is first created.
@@ -46,6 +48,8 @@ public class BoatWatchActivity extends Activity
         super.onCreate(savedInstanceState);
         Log.d(LogTitle, "onCreate");
 
+        serviceIntent = new Intent(this, AnchorWatchService.class);
+        startService(serviceIntent);
         //setContentView(R.layout.activity_main);
         getFragmentManager().beginTransaction()
                 .add(android.R.id.content, new AnchorWatchFragment())
@@ -85,6 +89,13 @@ public class BoatWatchActivity extends Activity
                         .replace(android.R.id.content, new SettingsFragment())
                         .addToBackStack(null)
                         .commit();    
+                break;
+            case R.id.action_exit:
+                if (serviceIntent != null)
+                {
+                    stopService(serviceIntent);
+                }
+                finish();
                 break;
         }
         return super.onOptionsItemSelected(item);

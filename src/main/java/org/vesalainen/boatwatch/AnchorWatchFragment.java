@@ -14,6 +14,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
+import static org.vesalainen.boatwatch.Settings.Simulate;
+import org.vesalainen.util.AbstractProvisioner.Setting;
 
 public class AnchorWatchFragment extends Fragment
 {
@@ -40,7 +42,6 @@ public class AnchorWatchFragment extends Fragment
         }
 
     };
-    private Intent serviceIntent;
     private Activity activity;
 
     @Override
@@ -53,10 +54,7 @@ public class AnchorWatchFragment extends Fragment
     @Override
     public void onDestroy()
     {
-        if (serviceIntent != null)
-        {
-            activity.stopService(serviceIntent);
-        }
+        Settings.detach(activity);
         super.onDestroy();
     }
 
@@ -81,6 +79,7 @@ public class AnchorWatchFragment extends Fragment
         {
             Log.e(LogTitle, "AnchorView not found for id="+R.id.anchor_view);
         }
+        Settings.attach(activity);
         Intent intent = new Intent(activity, AnchorWatchService.class);
         activity.bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
@@ -90,10 +89,14 @@ public class AnchorWatchFragment extends Fragment
     {
         super.onCreate(savedInstanceState);
         activity = getActivity();
-        serviceIntent = new Intent(activity, AnchorWatchService.class);
-        activity.startService(serviceIntent);
 
     }
 
-
+    @Setting(Simulate)
+    public void setSimulate(boolean simulate)
+    {
+        Log.d(LogTitle, "setSimulate("+simulate+")");
+        anchorView.setSimulate(simulate);
+    }
+    
 }
