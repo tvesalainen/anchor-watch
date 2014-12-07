@@ -1,9 +1,13 @@
 package org.vesalainen.boatwatch;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
@@ -114,4 +118,33 @@ public class AnchorWatchFragment extends Fragment
         anchorView.setSimulate(simulate);
     }
     
+    public class AlarmDialogFragment extends DialogFragment
+    {
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState)
+        {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setMessage(R.string.alarm_dialog_title)
+                    .setPositiveButton(R.string.alarm_dialog_mute, new DialogInterface.OnClickListener()
+                    {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which)
+                        {
+                            binder.mute();
+                        }
+                    })
+                    .setNegativeButton(R.string.alarm_dialog_exit, new DialogInterface.OnClickListener()
+                    {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which)
+                        {
+                            binder.stop();
+                            activity.finish();
+                        }
+                    });
+            return builder.create();
+        }
+
+    }
 }

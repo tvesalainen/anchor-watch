@@ -37,6 +37,7 @@ import java.io.ObjectOutputStream;
 import org.ejml.data.DenseMatrix64F;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
 import static org.vesalainen.boatwatch.Settings.AlarmTone;
+import static org.vesalainen.boatwatch.Settings.Mute;
 import static org.vesalainen.boatwatch.Settings.Simulate;
 import org.vesalainen.math.Circle;
 import org.vesalainen.math.ConvexPolygon;
@@ -61,7 +62,8 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     private boolean stopped;
     private String alarmTone;
     private MediaPlayer mediaPlayer;
-    private boolean alarmed;
+    private long alarmEnd = Long.MAX_VALUE;
+    private int muteTime;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
@@ -103,11 +105,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     public void onDestroy()
     {
         watch.removeWatcher(this);
-        if (mediaPlayer != null)
-        {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
+        stopAlarm();
         if (!simulate)
         {
             locationManager.removeUpdates(this);
@@ -188,6 +186,12 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         }
     }
 
+    @Setting(Mute)
+    public void setMuteTime(String muteTime)
+    {
+        this.muteTime = Integer.parseInt(muteTime);
+    }
+    
     @Setting(AlarmTone)
     public void setAlarmTone(String alarmTone)
     {
@@ -197,9 +201,9 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     @Override
     public void alarm(double distance)
     {
-        if (!alarmed)
+        if (alarmEnd > System.currentTimeMillis())
         {
-            alarmed = true;
+            alarmEnd = 0;
             if (alarmTone != null && !alarmTone.isEmpty())
             {
                 try {
@@ -241,6 +245,15 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     public void safeSector(MouldableSector safe)
     {
     }
+
+    private void stopAlarm()
+    {
+        if (mediaPlayer != null)
+        {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
     
     public class AnchorWatchBinder extends Binder
     {
@@ -256,6 +269,11 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         {
             stopped = true;
             stopSelf();
+        }
+        void mute()
+        {
+            stopAlarm();
+            alarmEnd = System.currentTimeMillis()+60000*muteTime;
         }
     }
 }

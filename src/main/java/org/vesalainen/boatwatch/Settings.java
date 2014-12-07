@@ -21,20 +21,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
-import android.util.Log;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import static org.vesalainen.boatwatch.BoatWatchConstants.*;
 import org.vesalainen.util.AbstractProvisioner;
-import org.vesalainen.util.HashMapList;
-import org.vesalainen.util.MapList;
 
 /**
  *
@@ -44,6 +32,7 @@ public class Settings
 {
     public static final String Simulate = "pref_simulate";
     public static final String AlarmTone = "pref_alarmtone";
+    public static final String Mute = "pref_mute_time";
     
     public static Provisioner provisioner;
     
