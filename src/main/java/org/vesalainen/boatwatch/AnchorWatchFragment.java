@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
@@ -82,6 +83,7 @@ public class AnchorWatchFragment extends Fragment
         Settings.attach(activity);
         Intent intent = new Intent(activity, AnchorWatchService.class);
         activity.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        anchorView.invalidate();
     }
 
     @Override
@@ -89,7 +91,20 @@ public class AnchorWatchFragment extends Fragment
     {
         super.onCreate(savedInstanceState);
         activity = getActivity();
+        setHasOptionsMenu(true);
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        switch (item.getItemId())
+        {
+            case R.id.action_exit:
+                binder.stop();
+                activity.finish();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Setting(Simulate)

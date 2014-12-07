@@ -28,7 +28,10 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
 import static org.vesalainen.boatwatch.Settings.Simulate;
 import org.vesalainen.navi.AnchorWatch;
@@ -42,11 +45,13 @@ import org.vesalainen.util.AbstractProvisioner.Setting;
  */
 public class AnchorWatchService extends Service implements LocationListener
 {
-    private final AnchorWatch watch = new AnchorWatch();
+    private static final String BackupFilename = "anchorwatch.ser";
+    private AnchorWatch watch;
     private LocationManager locationManager;
     private final IBinder binder = new AnchorWatchBinder();
     private AnchorageSimulator simulator;
     private boolean simulate = true;
+    private boolean stopped;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
@@ -60,6 +65,21 @@ public class AnchorWatchService extends Service implements LocationListener
     {
         super.onCreate();
         Toast.makeText(this, "onCreate", Toast.LENGTH_SHORT).show();
+        try (ObjectInputStream in = new ObjectInputStream(openFileInput(BackupFilename)))
+        {
+            watch = (AnchorWatch) in.readObject();
+            Log.d(LogTitle, "read "+BackupFilename);
+        }
+        catch (FileNotFoundException ex)
+        {
+            watch = new AnchorWatch();
+            Log.d(LogTitle, "started from cratch");
+        }
+        catch (IOException | ClassNotFoundException ex)
+        {
+            Log.e(LogTitle, ex.getMessage(), ex);
+            watch = new AnchorWatch();
+        }
         Settings.attach(this);
     }
 
@@ -79,6 +99,23 @@ public class AnchorWatchService extends Service implements LocationListener
             locationManager.removeUpdates(this);
         }
         Settings.detach(this);
+        if (stopped)
+        {
+            deleteFile(BackupFilename);
+            Log.d(LogTitle, "deleted "+BackupFilename);
+        }
+        else
+        {
+            try (ObjectOutputStream out = new ObjectOutputStream(openFileOutput(BackupFilename, MODE_PRIVATE)))
+            {
+                out.writeObject(watch);
+                Log.d(LogTitle, "wrote "+BackupFilename);
+            }
+            catch (IOException ex)
+            {
+                Log.e(LogTitle, ex.getMessage(), ex);
+            }
+        }
         super.onDestroy();
     }
 
@@ -106,13 +143,13 @@ public class AnchorWatchService extends Service implements LocationListener
     public void setSimulate(boolean simulate)
     {
         Log.d(LogTitle, "setSimulate("+simulate+")");
-        watch.reset();
         if (simulate)
         {
             if (locationManager != null)
             {
                 locationManager.removeUpdates(this);
                 locationManager = null;
+                watch.reset();
             }
             simulator = new AnchorageSimulator();
             try
@@ -130,8 +167,9 @@ public class AnchorWatchService extends Service implements LocationListener
             {
                 simulator.cancel();
                 simulator = null;
+                watch.reset();
             }
-            locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
         }
     }
@@ -145,6 +183,11 @@ public class AnchorWatchService extends Service implements LocationListener
         void removeWatcher(Watcher watcher)
         {
             watch.removeWatcher(watcher);
+        }
+        void stop()
+        {
+            stopped = true;
+            stopSelf();
         }
     }
 }

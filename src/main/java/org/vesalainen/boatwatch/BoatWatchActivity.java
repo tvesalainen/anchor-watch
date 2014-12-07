@@ -89,14 +89,7 @@ public class BoatWatchActivity extends Activity
                         .replace(android.R.id.content, new SettingsFragment())
                         .addToBackStack(null)
                         .commit();    
-                break;
-            case R.id.action_exit:
-                if (serviceIntent != null)
-                {
-                    stopService(serviceIntent);
-                }
-                finish();
-                break;
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
