@@ -23,6 +23,8 @@ import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -32,18 +34,23 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import org.ejml.data.DenseMatrix64F;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
+import static org.vesalainen.boatwatch.Settings.AlarmTone;
 import static org.vesalainen.boatwatch.Settings.Simulate;
+import org.vesalainen.math.Circle;
+import org.vesalainen.math.ConvexPolygon;
 import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.navi.AnchorWatch.Watcher;
 import org.vesalainen.navi.AnchorageSimulator;
+import org.vesalainen.ui.MouldableSector;
 import org.vesalainen.util.AbstractProvisioner.Setting;
 
 /**
  *
  * @author Timo Vesalainen
  */
-public class AnchorWatchService extends Service implements LocationListener
+public class AnchorWatchService extends Service implements LocationListener, Watcher
 {
     private static final String BackupFilename = "anchorwatch.ser";
     private AnchorWatch watch;
@@ -52,6 +59,9 @@ public class AnchorWatchService extends Service implements LocationListener
     private AnchorageSimulator simulator;
     private boolean simulate = true;
     private boolean stopped;
+    private String alarmTone;
+    private MediaPlayer mediaPlayer;
+    private boolean alarmed;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
@@ -64,7 +74,6 @@ public class AnchorWatchService extends Service implements LocationListener
     public void onCreate()
     {
         super.onCreate();
-        Toast.makeText(this, "onCreate", Toast.LENGTH_SHORT).show();
         try (ObjectInputStream in = new ObjectInputStream(openFileInput(BackupFilename)))
         {
             watch = (AnchorWatch) in.readObject();
@@ -80,20 +89,25 @@ public class AnchorWatchService extends Service implements LocationListener
             Log.e(LogTitle, ex.getMessage(), ex);
             watch = new AnchorWatch();
         }
+        watch.addWatcher(this);
         Settings.attach(this);
     }
 
     @Override
     public IBinder onBind(Intent intent)
     {
-        Toast.makeText(this, "onBind", Toast.LENGTH_SHORT).show();
         return binder;
     }
 
     @Override
     public void onDestroy()
     {
-        Toast.makeText(this, "onDestroy", Toast.LENGTH_SHORT).show();
+        watch.removeWatcher(this);
+        if (mediaPlayer != null)
+        {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
         if (!simulate)
         {
             locationManager.removeUpdates(this);
@@ -172,6 +186,60 @@ public class AnchorWatchService extends Service implements LocationListener
             locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
         }
+    }
+
+    @Setting(AlarmTone)
+    public void setAlarmTone(String alarmTone)
+    {
+        this.alarmTone = alarmTone;
+    }
+    
+    @Override
+    public void alarm(double distance)
+    {
+        if (!alarmed)
+        {
+            alarmed = true;
+            if (alarmTone != null && !alarmTone.isEmpty())
+            {
+                try {
+                    mediaPlayer = new MediaPlayer();
+                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
+                    mediaPlayer.setDataSource(alarmTone);
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                }
+                catch (IOException | IllegalArgumentException | SecurityException | IllegalStateException ex) 
+                {
+                    Log.e(LogTitle, ex.getMessage(), ex);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void location(double x, double y)
+    {
+    }
+
+    @Override
+    public void area(ConvexPolygon area)
+    {
+    }
+
+    @Override
+    public void outer(DenseMatrix64F path)
+    {
+    }
+
+    @Override
+    public void estimated(Circle estimated)
+    {
+    }
+
+    @Override
+    public void safeSector(MouldableSector safe)
+    {
     }
     
     public class AnchorWatchBinder extends Binder

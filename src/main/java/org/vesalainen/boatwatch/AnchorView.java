@@ -61,8 +61,6 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     private MouldableSector safe;
     private MouldableSector.Cursor cursor;
     private boolean simulate;
-    private String alarmTone;
-    private MediaPlayer mediaPlayer = new MediaPlayer();
 
     public AnchorView(Context context)
     {
@@ -193,19 +191,6 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     @Override
     public void alarm(double distance)
     {
-        if (alarmTone != null)
-        {
-            try {
-                mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
-                mediaPlayer.setDataSource(alarmTone);
-                mediaPlayer.prepare();
-                mediaPlayer.start();
-            }
-            catch (IOException | IllegalArgumentException | SecurityException | IllegalStateException ex) 
-            {
-                Log.e(LogTitle, ex.getMessage(), ex);
-            }
-        }
     }
 
     @Override
