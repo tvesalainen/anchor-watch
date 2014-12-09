@@ -38,19 +38,27 @@ public class Settings
     
     public static void attach(Context context)
     {
+        attach(context, context);
+    }
+    public static void attach(Context context, Object ob)
+    {
         if (provisioner == null)
         {
             provisioner = new Provisioner(context);
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
             sharedPreferences.registerOnSharedPreferenceChangeListener(provisioner);
         }
-        provisioner.attach(context);
+        provisioner.attach(ob);
     }
     public static void detach(Context context)
     {
+        detach(context, context);
+    }
+    public static void detach(Context context, Object ob)
+    {
         if (provisioner != null)
         {
-            provisioner.detach(context);
+            provisioner.detach(ob);
             if (provisioner.isEmpty())
             {
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -59,7 +67,7 @@ public class Settings
             }
         }
     }
-    private static class Provisioner extends AbstractProvisioner<Context> implements OnSharedPreferenceChangeListener
+    private static class Provisioner extends AbstractProvisioner<Object> implements OnSharedPreferenceChangeListener
     {
         private final Context context;
 

@@ -17,15 +17,17 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
 import static org.vesalainen.boatwatch.Settings.Simulate;
 import org.vesalainen.util.AbstractProvisioner.Setting;
 
 public class AnchorWatchFragment extends Fragment
 {
+    public static final String Tag = "org.vesalainen.boatwatch.AnchorWatchFragment";
     private AnchorView anchorView;
-    private AnchorWatchBinder binder;
+    private BoatWatchActivity boatWatchActivity;
+    private Intent serviceIntent;
+    private AnchorWatchService.AnchorWatchBinder binder;
     private boolean bound;
 
     private ServiceConnection connection = new ServiceConnection()
@@ -33,7 +35,7 @@ public class AnchorWatchFragment extends Fragment
         @Override
         public void onServiceConnected(ComponentName name, IBinder service)
         {
-            Log.d(LogTitle, "onServiceConnected " + anchorView);
+            Log.d("BoatWatchActivity", "onServiceConnected");
             binder = (AnchorWatchService.AnchorWatchBinder) service;
             binder.addWatcher(anchorView);
             bound = true;
@@ -42,60 +44,60 @@ public class AnchorWatchFragment extends Fragment
         @Override
         public void onServiceDisconnected(ComponentName name)
         {
+            Log.d("BoatWatchActivity", "onServiceDisconnected");
             binder.removeWatcher(anchorView);
             bound = false;
         }
 
     };
-    private Activity activity;
+    private String action;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    public void onAttach(Activity activity)
     {
-        return inflater.inflate(R.layout.anchor_view, container, false);
-    }
-
-
-    @Override
-    public void onDestroy()
-    {
-        Settings.detach(activity);
-        super.onDestroy();
-    }
-
-    @Override
-    public void onStop()
-    {
-        if (bound)
-        {
-            activity.unbindService(connection);
-            binder.removeWatcher(anchorView);
-        }
-        super.onStop();
-    }
-
-    @Override
-    public void onStart()
-    {
-        super.onStart();
-        
-        anchorView = (AnchorView) activity.findViewById(R.id.anchor_view);
-        if (anchorView == null)
-        {
-            Log.e(LogTitle, "AnchorView not found for id="+R.id.anchor_view);
-        }
-        Settings.attach(activity);
-        Intent intent = new Intent(activity, AnchorWatchService.class);
-        activity.bindService(intent, connection, Context.BIND_AUTO_CREATE);
-        anchorView.invalidate();
+        Log.d("AnchorWatchFragment", "onAttach");
+        super.onAttach(activity);
+        boatWatchActivity = (BoatWatchActivity) activity;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
+        Log.d("AnchorWatchFragment", "onCreate");
         super.onCreate(savedInstanceState);
-        activity = getActivity();
         setHasOptionsMenu(true);
+        serviceIntent = new Intent(boatWatchActivity, AnchorWatchService.class);
+        boatWatchActivity.startService(serviceIntent);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    {
+        Log.d("AnchorWatchFragment", "onCreateView");
+        return inflater.inflate(R.layout.anchor_view, container, false);
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState)
+    {
+        Log.d("AnchorWatchFragment", "onActivityCreated");
+        super.onActivityCreated(savedInstanceState);
+        anchorView = (AnchorView) boatWatchActivity.findViewById(R.id.anchor_view);
+        if (anchorView == null)
+        {
+            Log.e(LogTitle, "AnchorView not found for id="+R.id.anchor_view);
+        }
+    }
+
+    @Override
+    public void onStart()
+    {
+        Log.d("AnchorWatchFragment", "onStart");
+        super.onStart();
+        
+        Settings.attach(boatWatchActivity, this);
+        Intent intent = new Intent(boatWatchActivity, AnchorWatchService.class);
+        boatWatchActivity.bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -105,10 +107,29 @@ public class AnchorWatchFragment extends Fragment
         {
             case R.id.action_exit:
                 binder.stop();
-                activity.finish();
+                boatWatchActivity.finish();
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onStop()
+    {
+        Log.d("AnchorWatchFragment", "onStop");
+        Settings.detach(boatWatchActivity, this);
+        if (bound)
+        {
+            boatWatchActivity.unbindService(connection);
+        }
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        Log.d("AnchorWatchFragment", "onDestroy");
+        super.onDestroy();
     }
 
     @Setting(Simulate)
@@ -117,7 +138,13 @@ public class AnchorWatchFragment extends Fragment
         Log.d(LogTitle, "setSimulate("+simulate+")");
         anchorView.setSimulate(simulate);
     }
-    
+
+    void setAlarm()
+    {
+        AlarmDialogFragment adf = new AlarmDialogFragment();
+        adf.show(getFragmentManager(), null);
+    }
+
     public class AlarmDialogFragment extends DialogFragment
     {
 
@@ -140,7 +167,7 @@ public class AnchorWatchFragment extends Fragment
                         public void onClick(DialogInterface dialog, int which)
                         {
                             binder.stop();
-                            activity.finish();
+                            boatWatchActivity.finish();
                         }
                     });
             return builder.create();

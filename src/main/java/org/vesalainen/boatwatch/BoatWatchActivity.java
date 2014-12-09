@@ -18,13 +18,13 @@
 package org.vesalainen.boatwatch;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import static org.vesalainen.boatwatch.BoatWatchConstants.*;
 
 /**
  *
@@ -32,7 +32,7 @@ import static org.vesalainen.boatwatch.BoatWatchConstants.*;
  */
 public class BoatWatchActivity extends Activity
 {
-    private Intent serviceIntent;
+    public static final String AlarmAction = "org.vesalainen.boatwatch.AlarmAction";
 
     /**
      * Called when the activity is first created.
@@ -46,33 +46,57 @@ public class BoatWatchActivity extends Activity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        Log.d(LogTitle, "onCreate");
-
-        serviceIntent = new Intent(this, AnchorWatchService.class);
-        startService(serviceIntent);
-        //setContentView(R.layout.activity_main);
+        Log.d("BoatWatchActivity", "onCreate");
+        AnchorWatchFragment anchorWatchFragment = new AnchorWatchFragment();
         getFragmentManager().beginTransaction()
-                .add(android.R.id.content, new AnchorWatchFragment())
+                .add(android.R.id.content, anchorWatchFragment, AnchorWatchFragment.Tag)
                 .commit();    
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+        Intent intent = getIntent();
+        if (AlarmAction.equals(intent.getAction()))
+        {
+            anchorWatchFragment.setAlarm();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent)
+    {
+        Log.d("BoatWatchActivity", "onNewIntent");
+        super.onNewIntent(intent);
+        AnchorWatchFragment anchorWatchFragment = (AnchorWatchFragment) getFragmentManager().findFragmentByTag(AnchorWatchFragment.Tag);
+        if (anchorWatchFragment == null)
+        {
+            anchorWatchFragment = new AnchorWatchFragment();
+        }
+        getFragmentManager().beginTransaction()
+                .replace(android.R.id.content, anchorWatchFragment, AnchorWatchFragment.Tag)
+                .addToBackStack(null)
+                .commit();    
+        if (AlarmAction.equals(intent.getAction()))
+        {
+            anchorWatchFragment.setAlarm();
+        }
     }
 
     @Override
     protected void onStart()
     {
+        Log.d("BoatWatchActivity", "onStart");
         super.onStart();
-        Log.d(LogTitle, "onStart");
     }
 
     @Override
     protected void onStop()
     {
+        Log.d("BoatWatchActivity", "onStop");
         super.onStop();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
+        Log.d("BoatWatchActivity", "onCreateOptionsMenu");
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(org.vesalainen.boatwatch.R.menu.main, menu);
         return true;
@@ -81,14 +105,14 @@ public class BoatWatchActivity extends Activity
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
+        Log.d("BoatWatchActivity", "onOptionsItemSelected");
         switch (item.getItemId())
         {
             case R.id.action_settings:
-            // Display the fragment as the main content.
                 getFragmentManager().beginTransaction()
                         .replace(android.R.id.content, new SettingsFragment())
                         .addToBackStack(null)
-                        .commit();    
+                        .commit();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -97,7 +121,8 @@ public class BoatWatchActivity extends Activity
     @Override
     protected void onDestroy()
     {
+        Log.d("BoatWatchActivity", "onDestroy");
         super.onDestroy();
     }
-    
+
 }

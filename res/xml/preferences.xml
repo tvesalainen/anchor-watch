@@ -29,9 +29,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         android:key="pref_mute_time"
         android:title="@string/mute_time"
         android:summary="@string/mute_time_sum"
-        android:entries="@string/mute_time_entries"
-        android:entryValues="@string/mute_time_values"
-        android:defaultValue="5" />
+        android:entries="@array/minute_entries"
+        android:entryValues="@array/minute_values"
+        android:defaultValue="@string/mute_time_default" />
     />
     <CheckBoxPreference
         android:key="pref_simulate"

@@ -34,7 +34,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Timer;
+import java.util.TimerTask;
 import org.ejml.data.DenseMatrix64F;
+import static org.vesalainen.boatwatch.BoatWatchActivity.AlarmAction;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
 import static org.vesalainen.boatwatch.Settings.AlarmTone;
 import static org.vesalainen.boatwatch.Settings.Mute;
@@ -59,23 +62,26 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     private final IBinder binder = new AnchorWatchBinder();
     private AnchorageSimulator simulator;
     private boolean simulate = true;
-    private boolean stopped;
+    private boolean stopping;
     private String alarmTone;
     private MediaPlayer mediaPlayer;
-    private long alarmEnd = Long.MAX_VALUE;
-    private int muteTime;
+    private boolean alarmMuted;
+    private long muteMillis;
+    private Timer timer;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
     {
-        Toast.makeText(this, "onStartCommand", Toast.LENGTH_SHORT).show();
+        Log.d("AnchorWatchService", "onStartCommand");
         return START_STICKY;
     }
 
     @Override
     public void onCreate()
     {
+        Log.d("AnchorWatchService", "onCreate");
         super.onCreate();
+        timer = new Timer();
         try (ObjectInputStream in = new ObjectInputStream(openFileInput(BackupFilename)))
         {
             watch = (AnchorWatch) in.readObject();
@@ -98,12 +104,16 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     @Override
     public IBinder onBind(Intent intent)
     {
+        Log.d("AnchorWatchService", "onBind");
         return binder;
     }
 
     @Override
     public void onDestroy()
     {
+        Log.d("AnchorWatchService", "onDestroy");
+        timer.cancel();
+        timer = null;
         watch.removeWatcher(this);
         stopAlarm();
         if (!simulate)
@@ -111,7 +121,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
             locationManager.removeUpdates(this);
         }
         Settings.detach(this);
-        if (stopped)
+        if (stopping)
         {
             deleteFile(BackupFilename);
             Log.d(LogTitle, "deleted "+BackupFilename);
@@ -163,7 +173,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
                 locationManager = null;
                 watch.reset();
             }
-            simulator = new AnchorageSimulator();
+            simulator = new AnchorageSimulator(timer);
             try
             {
                 simulator.simulate(watch, 1000, true);
@@ -189,7 +199,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     @Setting(Mute)
     public void setMuteTime(String muteTime)
     {
-        this.muteTime = Integer.parseInt(muteTime);
+        this.muteMillis = 60000*Integer.parseInt(muteTime);
     }
     
     @Setting(AlarmTone)
@@ -201,9 +211,9 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     @Override
     public void alarm(double distance)
     {
-        if (alarmEnd > System.currentTimeMillis())
+        if (!alarmMuted)
         {
-            alarmEnd = 0;
+            alarmMuted = true;
             if (alarmTone != null && !alarmTone.isEmpty())
             {
                 try {
@@ -218,6 +228,10 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
                     Log.e(LogTitle, ex.getMessage(), ex);
                 }
             }
+            Intent alarmIntent = new Intent(this, BoatWatchActivity.class);
+            alarmIntent.setAction(AlarmAction);
+            alarmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(alarmIntent);
         }
     }
 
@@ -257,6 +271,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     
     public class AnchorWatchBinder extends Binder
     {
+        private TimerTask resumeAlarm;
         void addWatcher(Watcher watcher)
         {
             watch.addWatcher(watcher);
@@ -267,13 +282,26 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         }
         void stop()
         {
-            stopped = true;
+            stopping = true;
             stopSelf();
         }
         void mute()
         {
             stopAlarm();
-            alarmEnd = System.currentTimeMillis()+60000*muteTime;
+            if (resumeAlarm != null)
+            {
+                resumeAlarm.cancel();
+            }
+            resumeAlarm = new TimerTask() 
+            {
+                @Override
+                public void run()
+                {
+                    alarmMuted = false;
+                    resumeAlarm = null;
+                }
+            };
+            timer.schedule(resumeAlarm, muteMillis);
         }
     }
 }

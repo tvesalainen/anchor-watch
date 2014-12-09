@@ -13,7 +13,8 @@
     <string name="alarm_dialog_mute">Mute (for a short time)</string>
     <string name="mute_time">Mute Time</string>
     <string name="mute_time_sum">How many minutes anchor alarm is suspended</string>
-    <string-array name="mute_time_entries">
+    <string name="mute_time_default">5</string>
+    <string-array name="minute_entries">
         <item>1 Minute</item>
         <item>2 Minute</item>
         <item>5 Minute</item>
@@ -22,7 +23,7 @@
         <item>20 Minute</item>
         <item>30 Minute</item>
     </string-array>
-    <string-array name="mute_time_values">
+    <string-array name="minute_values">
         <item>1</item>
         <item>2</item>
         <item>5</item>
