@@ -30,6 +30,7 @@ import org.vesalainen.util.AbstractProvisioner;
  */
 public class Settings
 {
+    public static final String DistanceUnit = "pref_distance_unit";
     public static final String Simulate = "pref_simulate";
     public static final String AlarmTone = "pref_alarmtone";
     public static final String Mute = "pref_mute_time";

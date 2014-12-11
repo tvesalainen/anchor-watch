@@ -18,6 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:key="pref_distance_unit"
+        android:title="@string/distance_unit"
+        android:summary="@string/distance_unit_sum"
+        android:entries="@array/distance_unit_entries"
+        android:entryValues="@array/distance_unit_values"
+        android:defaultValue="@string/distance_unit_default" />
+    />
     <RingtonePreference
         android:key="pref_alarmtone"
         android:title="@string/alarm_tone"

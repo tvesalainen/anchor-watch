@@ -10,7 +10,7 @@
     <string name="alarm_tone_sum">Tone that sounds when anchor is not holding</string>
     <string name="alarm_dialog_title">Anchor Alarm</string>
     <string name="alarm_dialog_exit">Exit Application</string>
-    <string name="alarm_dialog_mute">Mute (for a short time)</string>
+    <string name="alarm_dialog_mute">Mute</string>
     <string name="mute_time">Mute Time</string>
     <string name="mute_time_sum">How many minutes anchor alarm is suspended</string>
     <string name="mute_time_default">5</string>
@@ -31,5 +31,16 @@
         <item>15</item>
         <item>20</item>
         <item>30</item>
+    </string-array>
+    <string name="distance_unit">Distance Unit</string>
+    <string name="distance_unit_sum">Distance Unit</string>
+    <string name="distance_unit_default">meters</string>
+    <string-array name="distance_unit_entries">
+        <item>Meters</item>
+        <item>Feets</item>
+    </string-array>
+    <string-array name="distance_unit_values">
+        <item>m</item>
+        <item>ft</item>
     </string-array>
 </resources>

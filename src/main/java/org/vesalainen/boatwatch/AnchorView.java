@@ -21,26 +21,21 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import java.io.IOException;
 import org.ejml.data.DenseMatrix64F;
 import static org.vesalainen.boatwatch.BoatWatchConstants.LogTitle;
-import static org.vesalainen.boatwatch.Settings.AlarmTone;
-import static org.vesalainen.boatwatch.Settings.Simulate;
 import org.vesalainen.math.Circle;
 import org.vesalainen.math.ConvexPolygon;
 import org.vesalainen.math.Sector;
 import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.ui.AbstractView;
 import org.vesalainen.ui.MouldableSector;
-import org.vesalainen.util.AbstractProvisioner.Setting;
 import org.vesalainen.util.navi.Angle;
+import org.vesalainen.util.navi.Feet;
 
 /**
  *
@@ -61,6 +56,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     private MouldableSector safe;
     private MouldableSector.Cursor cursor;
     private boolean simulate;
+    private String distanceUnit = "m";
 
     public AnchorView(Context context)
     {
@@ -93,8 +89,13 @@ public class AnchorView extends View implements AnchorWatch.Watcher
 
     public void setSimulate(boolean simulate)
     {
-        Log.d(LogTitle, "setSimulate("+simulate+")");
+        Log.d(LogTitle, "AnchorView.setSimulate("+simulate+")");
         this.simulate = simulate;
+    }
+    
+    void setDistanceUnit(String distanceUnit)
+    {
+        this.distanceUnit = distanceUnit;
     }
     
     @Override
@@ -123,7 +124,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
             double y = safe.getY();
             double r = safe.getRadius();
             drawer.drawLine(x, y, x + r, y, manualPaint);
-            String txt = String.format("%.0fm", AnchorWatch.toMeters(r));
+            String txt = getDistance(r);
             drawer.drawText(txt, x + r / 2, y, manualPaint);
         }
     }
@@ -230,7 +231,19 @@ public class AnchorView extends View implements AnchorWatch.Watcher
         this.safe = safe;
         postInvalidate();
     }
-    
+
+    private String getDistance(double r)
+    {
+        switch (distanceUnit)
+        {
+            default:
+            case "m":
+                return String.format("%.0f m", AnchorWatch.toMeters(r));
+            case "ft":
+                return String.format("%.0f ft", Feet.fromMeters(AnchorWatch.toMeters(r)));
+        }
+    }
+
     private class Drawer extends AbstractView
     {
 
@@ -283,7 +296,6 @@ public class AnchorView extends View implements AnchorWatch.Watcher
                 float ra = (float) sector.getRightAngle();
                 float sweep = 360 - (float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(la, ra)));
                 float dl = 360 - (float) Math.toDegrees(la);
-                Log.d(LogTitle, "drawArc " + dl + ", " + sweep);
                 canvas.drawArc(rect, dl, sweep, true, paint);
             }
         }

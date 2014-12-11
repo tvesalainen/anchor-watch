@@ -55,8 +55,9 @@ public class BoatWatchActivity extends Activity
         Intent intent = getIntent();
         if (AlarmAction.equals(intent.getAction()))
         {
-            anchorWatchFragment.setAlarm();
-        }
+            AlarmDialogFragment adf = new AlarmDialogFragment();
+            adf.show(getFragmentManager(), null);
+        }        
     }
 
     @Override
@@ -64,19 +65,11 @@ public class BoatWatchActivity extends Activity
     {
         Log.d("BoatWatchActivity", "onNewIntent");
         super.onNewIntent(intent);
-        AnchorWatchFragment anchorWatchFragment = (AnchorWatchFragment) getFragmentManager().findFragmentByTag(AnchorWatchFragment.Tag);
-        if (anchorWatchFragment == null)
-        {
-            anchorWatchFragment = new AnchorWatchFragment();
-        }
-        getFragmentManager().beginTransaction()
-                .replace(android.R.id.content, anchorWatchFragment, AnchorWatchFragment.Tag)
-                .addToBackStack(null)
-                .commit();    
         if (AlarmAction.equals(intent.getAction()))
         {
-            anchorWatchFragment.setAlarm();
-        }
+            AlarmDialogFragment adf = new AlarmDialogFragment();
+            adf.show(getFragmentManager(), null);
+        }        
     }
 
     @Override
