@@ -20,6 +20,8 @@ package org.vesalainen.boatwatch;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.util.AttributeSet;
@@ -34,6 +36,7 @@ import org.vesalainen.math.Sector;
 import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.ui.AbstractView;
 import org.vesalainen.ui.MouldableSector;
+import org.vesalainen.ui.MouldableSectorWithInnerCircle;
 import org.vesalainen.util.navi.Angle;
 import org.vesalainen.util.navi.Feet;
 
@@ -53,7 +56,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     private double lastY;
     private ConvexPolygon area;
     private Circle estimated;
-    private MouldableSector safe;
+    private MouldableSectorWithInnerCircle safe;
     private MouldableSector.Cursor cursor;
     private boolean simulate;
     private String distanceUnit = "m";
@@ -119,7 +122,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
         }
         if (safe != null)
         {
-            drawer.drawSector(safe, manualPaint);
+            drawer.drawSectorWithInnerCircle(safe, manualPaint);
             double x = safe.getX();
             double y = safe.getY();
             double r = safe.getRadius();
@@ -225,7 +228,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     }
 
     @Override
-    public void safeSector(MouldableSector safe)
+    public void safeSector(MouldableSectorWithInnerCircle safe)
     {
         drawer.updateCircle(safe);
         this.safe = safe;
@@ -275,6 +278,37 @@ public class AnchorView extends View implements AnchorWatch.Watcher
             canvas.drawCircle(sx, sy, sr, paint);
         }
 
+        private void drawSectorWithInnerCircle(MouldableSectorWithInnerCircle sector, Paint paint)
+        {
+            if (sector.isCircle())
+            {
+                drawCircle(sector, paint);
+            }
+            else
+            {
+                drawSector(sector, paint);
+                Path path = new Path();
+                float sx = (float) toScreenX(sector.getX());
+                float sy = (float) toScreenY(sector.getY());
+                float sr = (float) scale(sector.getRadius());
+                RectF rect = new RectF(
+                        sx - sr,
+                        sy - sr,
+                        sx + sr,
+                        sy + sr
+                );
+                float la = (float) sector.getLeftAngle();
+                float ra = (float) sector.getRightAngle();
+                float sweep = 360 - (float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(ra, la)));
+                float dr = 360 - (float) Math.toDegrees(ra);
+                path.addArc(rect, dr, sweep);
+                Log.d(LogTitle, "dr="+dr+" sweep="+sweep);
+                Rect safeBounds = canvas.getClipBounds();
+                canvas.clipPath(path);
+                drawCircle(sector.getInnerCircle(), paint);
+                canvas.clipRect(safeBounds);
+            }
+        }
         private void drawSector(Sector sector, Paint paint)
         {
             if (sector.isCircle())

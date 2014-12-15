@@ -48,6 +48,7 @@ import org.vesalainen.navi.AnchorWatch;
 import org.vesalainen.navi.AnchorWatch.Watcher;
 import org.vesalainen.navi.AnchorageSimulator;
 import org.vesalainen.ui.MouldableSector;
+import org.vesalainen.ui.MouldableSectorWithInnerCircle;
 import org.vesalainen.util.AbstractProvisioner.Setting;
 
 /**
@@ -256,7 +257,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     }
 
     @Override
-    public void safeSector(MouldableSector safe)
+    public void safeSector(MouldableSectorWithInnerCircle safe)
     {
     }
 
