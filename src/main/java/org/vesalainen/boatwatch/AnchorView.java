@@ -23,6 +23,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Region;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -287,26 +288,12 @@ public class AnchorView extends View implements AnchorWatch.Watcher
             else
             {
                 drawSector(sector, paint);
-                Path path = new Path();
-                float sx = (float) toScreenX(sector.getX());
-                float sy = (float) toScreenY(sector.getY());
-                float sr = (float) scale(sector.getRadius());
-                RectF rect = new RectF(
-                        sx - sr,
-                        sy - sr,
-                        sx + sr,
-                        sy + sr
-                );
+                RectF rect = getRectF(sector.getInnerCircle());
                 float la = (float) sector.getLeftAngle();
                 float ra = (float) sector.getRightAngle();
                 float sweep = 360 - (float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(ra, la)));
                 float dr = 360 - (float) Math.toDegrees(ra);
-                path.addArc(rect, dr, sweep);
-                Log.d(LogTitle, "dr="+dr+" sweep="+sweep);
-                Rect safeBounds = canvas.getClipBounds();
-                canvas.clipPath(path);
-                drawCircle(sector.getInnerCircle(), paint);
-                canvas.clipRect(safeBounds);
+                canvas.drawArc(rect, dr, sweep, true, paint);
             }
         }
         private void drawSector(Sector sector, Paint paint)
@@ -317,15 +304,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
             }
             else
             {
-                float sx = (float) toScreenX(sector.getX());
-                float sy = (float) toScreenY(sector.getY());
-                float sr = (float) scale(sector.getRadius());
-                RectF rect = new RectF(
-                        sx - sr,
-                        sy - sr,
-                        sx + sr,
-                        sy + sr
-                );
+                RectF rect = getRectF(sector);
                 float la = (float) sector.getLeftAngle();
                 float ra = (float) sector.getRightAngle();
                 float sweep = 360 - (float) Math.toDegrees(Angle.normalizeToFullAngle(Angle.angleDiff(la, ra)));
@@ -334,6 +313,18 @@ public class AnchorView extends View implements AnchorWatch.Watcher
             }
         }
 
+        private RectF getRectF(Circle circle)
+        {
+                float sx = (float) toScreenX(circle.getX());
+                float sy = (float) toScreenY(circle.getY());
+                float sr = (float) scale(circle.getRadius());
+                return new RectF(
+                        sx - sr,
+                        sy - sr,
+                        sx + sr,
+                        sy + sr
+                );
+        }
         private void drawText(String text, double x, double y, Paint paint)
         {
             int ix = (int) toScreenX(x);
