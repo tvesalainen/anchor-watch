@@ -17,6 +17,8 @@
 
 package org.vesalainen.boatwatch;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -31,7 +33,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
-import android.widget.Toast;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -103,7 +104,19 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         watch.addWatcher(this);
         Settings.attach(this);
         acquireWakeLock(PowerManager.PARTIAL_WAKE_LOCK);
-    }
+        
+        PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
+                        new Intent(getApplicationContext(), BoatWatchActivity.class),
+                        PendingIntent.FLAG_UPDATE_CURRENT);
+        Notification.Builder mBuilder =
+            new Notification.Builder(this)
+            .setSmallIcon(R.drawable.ic_launcher)
+            .setContentTitle(getText(R.string.app_name))
+            .setContentText("AnchorWatch: on!")
+            .setContentIntent(pi)
+            ;
+        Notification notification = mBuilder.getNotification();
+        startForeground(1, notification);    }
 
     @Override
     public IBinder onBind(Intent intent)
