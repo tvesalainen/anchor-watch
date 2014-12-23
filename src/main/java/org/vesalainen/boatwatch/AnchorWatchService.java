@@ -112,10 +112,10 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
             new Notification.Builder(this)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle(getText(R.string.app_name))
-            .setContentText("AnchorWatch: on!")
+            .setContentText(getText(R.string.app_notification))
             .setContentIntent(pi)
             ;
-        Notification notification = mBuilder.getNotification();
+        Notification notification = mBuilder.build();
         startForeground(1, notification);    }
 
     @Override

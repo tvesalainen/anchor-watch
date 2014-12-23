@@ -119,7 +119,7 @@ public class AnchorView extends View implements Watcher
             String text = getResources().getText(R.string.simulate).toString();
             for (int ii=0,jj=0;ii<height;ii+=h,jj+=h)
             {
-                drawer.drawText(text, ii, jj % width, pointPaint);
+                drawer.drawText(text, jj % width, ii, pointPaint);
             }
         }
         drawer.drawPoint(lastX, lastY, pointPaint);
