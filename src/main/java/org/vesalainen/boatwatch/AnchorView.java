@@ -113,7 +113,14 @@ public class AnchorView extends View implements Watcher
         drawer.setCanvas(canvas);
         if (simulate)
         {
-            drawer.drawText("Simulate", (int)getX()/2, (int)getY()/2, pointPaint);
+            int width = canvas.getWidth();
+            int height = canvas.getHeight();
+            int h = height / 10;
+            String text = getResources().getText(R.string.simulate).toString();
+            for (int ii=0,jj=0;ii<height;ii+=h,jj+=h)
+            {
+                drawer.drawText(text, ii, jj % width, pointPaint);
+            }
         }
         drawer.drawPoint(lastX, lastY, pointPaint);
         if (area != null)
