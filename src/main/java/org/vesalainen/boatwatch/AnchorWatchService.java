@@ -24,10 +24,12 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
 import java.io.FileNotFoundException;
@@ -54,7 +56,7 @@ import org.vesalainen.util.AbstractProvisioner.Setting;
  *
  * @author Timo Vesalainen
  */
-public class AnchorWatchService extends Service implements LocationListener, Watcher
+public class AnchorWatchService extends Service implements LocationListener, Watcher, OnAudioFocusChangeListener
 {
     private static final String BackupFilename = "anchorwatch.ser";
     private AnchorWatch watch;
@@ -68,6 +70,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     private boolean alarmMuted;
     private long muteMillis;
     private Timer timer;
+    private PowerManager.WakeLock wakeLock;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
@@ -99,6 +102,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         }
         watch.addWatcher(this);
         Settings.attach(this);
+        acquireWakeLock(PowerManager.PARTIAL_WAKE_LOCK);
     }
 
     @Override
@@ -112,6 +116,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     public void onDestroy()
     {
         Log.d("AnchorWatchService", "onDestroy");
+        releaseWakeLock();
         timer.cancel();
         timer = null;
         watch.removeWatcher(this);
@@ -213,6 +218,13 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     {
         if (!alarmMuted)
         {
+            acquireWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP);
+            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            int result = audioManager.requestAudioFocus(this, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN);
+            if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) 
+            {
+                Log.e(LogTitle, "Could not gain audio focus "+result);
+            }            
             alarmMuted = true;
             if (alarmTone != null && !alarmTone.isEmpty())
             {
@@ -267,8 +279,31 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
             mediaPlayer.release();
             mediaPlayer = null;
         }
+        acquireWakeLock(PowerManager.PARTIAL_WAKE_LOCK);
+    }
+
+    private void acquireWakeLock(int flags)
+    {
+        releaseWakeLock();
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = pm.newWakeLock(flags, LogTitle);
+        wakeLock.acquire();
     }
     
+    private void releaseWakeLock()
+    {
+        if (wakeLock != null)
+        {
+            wakeLock.release();
+            wakeLock = null;
+        }
+    }
+
+    @Override
+    public void onAudioFocusChange(int focusChange)
+    {
+    }
+
     public class AnchorWatchBinder extends Binder
     {
         private TimerTask resumeAlarm;
