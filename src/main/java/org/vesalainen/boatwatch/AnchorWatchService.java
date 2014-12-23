@@ -162,6 +162,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     @Override
     public void onLocationChanged(Location location)
     {
+        Log.d(LogTitle, location.toString());
         watch.update(location.getLongitude(), location.getLatitude());
     }
 

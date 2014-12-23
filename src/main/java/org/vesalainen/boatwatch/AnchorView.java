@@ -18,16 +18,16 @@
 package org.vesalainen.boatwatch;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
 import java.util.HashMap;
 import java.util.Map;
 import org.ejml.data.DenseMatrix64F;
@@ -51,9 +51,9 @@ public class AnchorView extends View implements Watcher
 {
     private final Paint pointPaint;
     private final Paint areaPaint;
-    private final Paint backgroundPaint;
-    private final Paint estimatedPaint;
-    private final Paint manualPaint;
+    private final Paint usedAreaPaint;
+    private final Paint estimatedCirclePaint;
+    private final Paint safeSectorPaint;
     private final Drawer drawer = new Drawer();
     private double lastX;
     private double lastY;
@@ -64,6 +64,7 @@ public class AnchorView extends View implements Watcher
     private boolean simulate;
     private String distanceUnit = "m";
     private float touchRadius;
+    private DenseMatrix64F usedArea;
 
     public AnchorView(Context context)
     {
@@ -78,20 +79,29 @@ public class AnchorView extends View implements Watcher
     public AnchorView(Context context, AttributeSet attrs, int defStyle)
     {
         super(context, attrs, defStyle);
-        backgroundPaint = new Paint();
-        backgroundPaint.setStyle(Paint.Style.FILL);
-        pointPaint = new Paint();
-        pointPaint.setStyle(Paint.Style.STROKE);
-        pointPaint.setARGB(255, 255, 255, 255);
-        areaPaint = new Paint();
-        areaPaint.setStyle(Paint.Style.STROKE);
-        areaPaint.setARGB(255, 0, 0, 255);
-        estimatedPaint = new Paint();
-        estimatedPaint.setStyle(Paint.Style.STROKE);
-        estimatedPaint.setARGB(255, 255, 0, 0);
-        manualPaint = new Paint();
-        manualPaint.setStyle(Paint.Style.STROKE);
-        manualPaint.setARGB(255, 0, 255, 0);
+        TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.AnchorView, 0, 0);
+        try
+        {
+            pointPaint = new Paint();
+            pointPaint.setStyle(Paint.Style.STROKE);
+            pointPaint.setColor(a.getColor(R.styleable.AnchorView_pointColor, Color.WHITE));
+            areaPaint = new Paint();
+            areaPaint.setStyle(Paint.Style.STROKE);
+            areaPaint.setColor(a.getColor(R.styleable.AnchorView_areaColor, Color.BLUE));
+            usedAreaPaint = new Paint();
+            usedAreaPaint.setStyle(Paint.Style.STROKE);
+            usedAreaPaint.setColor(a.getColor(R.styleable.AnchorView_usedAreaColor, Color.CYAN));
+            estimatedCirclePaint = new Paint();
+            estimatedCirclePaint.setStyle(Paint.Style.STROKE);
+            estimatedCirclePaint.setColor(a.getColor(R.styleable.AnchorView_estimatedCircleColor, Color.MAGENTA));
+            safeSectorPaint = new Paint();
+            safeSectorPaint.setStyle(Paint.Style.STROKE);
+            safeSectorPaint.setColor(a.getColor(R.styleable.AnchorView_safeSectorColor, Color.GREEN));
+        }
+        finally
+        {
+            a.recycle();
+        }
     }
 
     public void setSimulate(boolean simulate)
@@ -109,7 +119,6 @@ public class AnchorView extends View implements Watcher
     protected void onDraw(Canvas canvas)
     {
         super.onDraw(canvas);
-        canvas.drawARGB(255, 0, 0, 0);
         drawer.setCanvas(canvas);
         if (simulate)
         {
@@ -127,19 +136,24 @@ public class AnchorView extends View implements Watcher
         {
             drawer.drawPolygon(area, areaPaint);
         }
+        if (usedArea != null)
+        {
+            drawer.drawPath(area, usedAreaPaint);
+            usedArea = null;
+        }
         if (estimated != null)
         {
-            drawer.drawCircle(estimated, estimatedPaint);
+            drawer.drawCircle(estimated, estimatedCirclePaint);
         }
         if (safe != null)
         {
-            drawer.drawSectorWithInnerCircle(safe, manualPaint);
+            drawer.drawSectorWithInnerCircle(safe, safeSectorPaint);
             double x = safe.getX();
             double y = safe.getY();
             double r = safe.getRadius();
-            drawer.drawLine(x, y, x + r, y, manualPaint);
+            drawer.drawLine(x, y, x + r, y, safeSectorPaint);
             String txt = getDistance(r);
-            drawer.drawText(txt, x + r / 2, y, manualPaint);
+            drawer.drawText(txt, x + r / 2, y, safeSectorPaint);
         }
     }
 
@@ -257,6 +271,8 @@ public class AnchorView extends View implements Watcher
     @Override
     public void outer(DenseMatrix64F path)
     {
+        this.usedArea = path;
+        postInvalidate();
     }
 
     @Override
@@ -400,6 +416,26 @@ public class AnchorView extends View implements Watcher
                 int x1 = (int) toScreenX(d[2 * (rows - 1)]);
                 int y1 = (int) toScreenY(d[2 * (rows - 1) + 1]);
                 for (int r = 0; r < rows; r++)
+                {
+                    int x2 = (int) toScreenX(d[2 * r]);
+                    int y2 = (int) toScreenY(d[2 * r + 1]);
+                    canvas.drawLine(x1, y1, x2, y2, paint);
+                    x1 = x2;
+                    y1 = y2;
+                }
+            }
+        }
+
+        private void drawPath(ConvexPolygon area, Paint paint)
+        {
+            DenseMatrix64F m = area.points;
+            double[] d = m.data;
+            int rows = m.numRows;
+            if (rows >= 1)
+            {
+                int x1 = (int) toScreenX(d[0]);
+                int y1 = (int) toScreenY(d[1]);
+                for (int r = 1; r < rows; r++)
                 {
                     int x2 = (int) toScreenX(d[2 * r]);
                     int y2 = (int) toScreenY(d[2 * r + 1]);
