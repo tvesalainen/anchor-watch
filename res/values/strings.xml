@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Anchor Watch</string>
+    <string name="app_name">Smart Anchor Watch</string>
     <string name="action_settings">Settings</string>
     <string name="action_exit">Exit</string>
     <string name="simulate">Simulate</string>

@@ -20,24 +20,26 @@ package org.vesalainen.boatwatch;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Region;
 import android.os.Bundle;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
+import java.util.HashMap;
+import java.util.Map;
 import org.ejml.data.DenseMatrix64F;
 import static org.vesalainen.boatwatch.BoatWatchConstants.LogTitle;
 import org.vesalainen.math.Circle;
 import org.vesalainen.math.ConvexPolygon;
 import org.vesalainen.math.Sector;
 import org.vesalainen.navi.AnchorWatch;
+import org.vesalainen.navi.AnchorWatch.Watcher;
+import org.vesalainen.navi.SafeSector;
+import org.vesalainen.navi.SafeSector.Cursor;
 import org.vesalainen.ui.AbstractView;
-import org.vesalainen.ui.MouldableSector;
-import org.vesalainen.ui.MouldableSectorWithInnerCircle;
 import org.vesalainen.util.navi.Angle;
 import org.vesalainen.util.navi.Feet;
 
@@ -45,7 +47,7 @@ import org.vesalainen.util.navi.Feet;
  *
  * @author Timo Vesalainen
  */
-public class AnchorView extends View implements AnchorWatch.Watcher
+public class AnchorView extends View implements Watcher
 {
     private final Paint pointPaint;
     private final Paint areaPaint;
@@ -57,10 +59,11 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     private double lastY;
     private ConvexPolygon area;
     private Circle estimated;
-    private MouldableSectorWithInnerCircle safe;
-    private MouldableSector.Cursor cursor;
+    private SafeSector safe;
+    private Map<Integer,Cursor> cursorMap = new HashMap<>();
     private boolean simulate;
     private String distanceUnit = "m";
+    private float touchRadius;
 
     public AnchorView(Context context)
     {
@@ -136,46 +139,75 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     @Override
     public boolean onTouchEvent(MotionEvent event)
     {
-        int action = event.getAction();
-        double x = drawer.fromScreenX(event.getX());
-        double y = drawer.fromScreenY(event.getY());
-        switch (action)
+        double r = drawer.scaleFromScreen(touchRadius);
+        Cursor cursor;
+        
+        int pointerIndex = event.getActionIndex();
+        int pointerId = event.getPointerId(pointerIndex);
+        Log.d(LogTitle, "pointerIndex="+pointerIndex+" pointerId="+pointerId);
+        int actionMasked = event.getActionMasked();
+        switch (actionMasked)
         {
             case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN:
                 if (safe != null)
                 {
-                    cursor = safe.getCursor(x, y);
-                    invalidate();
+                    double x = drawer.fromScreenX(event.getX(pointerIndex));
+                    double y = drawer.fromScreenY(event.getY(pointerIndex));
+                    cursor = safe.getCursor(x, y, r);
+                    if (cursor != null)
+                    {
+                        cursorMap.put(pointerId, cursor);
+                        Log.d(LogTitle, "put "+pointerId+" "+cursor);
+                        invalidate();
+                    }
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (cursor != null)
+                int cnt = event.getPointerCount();
+                for (int ii=0;ii<cnt;ii++)
                 {
-                    cursor = cursor.update(x, y);
-                    invalidate();
+                    int p = event.getPointerId(ii);
+                    cursor = cursorMap.get(p);
+                    if (cursor != null)
+                    {
+                        Log.d(LogTitle, "use "+p+" "+cursor);
+                        double x = drawer.fromScreenX(event.getX(ii));
+                        double y = drawer.fromScreenY(event.getY(ii));
+                        cursorMap.put(p, cursor.update(x, y));
+                        invalidate();
+                    }
                 }
                 break;
             case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+                cursor = cursorMap.get(pointerId);
                 if (cursor != null)
                 {
+                    double x = drawer.fromScreenX(event.getX(pointerIndex));
+                    double y = drawer.fromScreenY(event.getY(pointerIndex));
                     cursor.ready(x, y);
-                    cursor = null;
+                    cursorMap.remove(pointerId);
+                    Log.d(LogTitle, "rem "+pointerId+" "+cursor);
+                    drawer.reset();
+                    drawer.updatePoint(lastX, lastY);
+                    if (area != null)
+                    {
+                        drawer.updatePolygon(area);
+                    }
+                    if (estimated != null)
+                    {
+                        drawer.updateCircle(estimated);
+                    }
+                    if (safe != null)
+                    {
+                        drawer.updateCircle(safe);
+                    }
+                    invalidate();
                 }
-                drawer.reset();
-                drawer.updatePoint(lastX, lastY);
-                if (area != null)
-                {
-                    drawer.updatePolygon(area);
-                }
-                if (estimated != null)
-                {
-                    drawer.updateCircle(estimated);
-                }
-                if (safe != null)
-                {
-                    drawer.updateCircle(safe);
-                }
-                invalidate();
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                cursorMap.remove(pointerId);
                 break;
         }
         return true;
@@ -229,7 +261,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
     }
 
     @Override
-    public void safeSector(MouldableSectorWithInnerCircle safe)
+    public void safeSector(SafeSector safe)
     {
         drawer.updateCircle(safe);
         this.safe = safe;
@@ -246,6 +278,11 @@ public class AnchorView extends View implements AnchorWatch.Watcher
             case "ft":
                 return String.format("%.0f ft", Feet.fromMeters(AnchorWatch.toMeters(r)));
         }
+    }
+
+    public void setTouchRadius(float touchRadius)
+    {
+        this.touchRadius = touchRadius;
     }
 
     private class Drawer extends AbstractView
@@ -275,11 +312,11 @@ public class AnchorView extends View implements AnchorWatch.Watcher
         {
             float sx = (float) toScreenX(circle.getX());
             float sy = (float) toScreenY(circle.getY());
-            float sr = (float) scale(circle.getRadius());
+            float sr = (float) scaleToScreen(circle.getRadius());
             canvas.drawCircle(sx, sy, sr, paint);
         }
 
-        private void drawSectorWithInnerCircle(MouldableSectorWithInnerCircle sector, Paint paint)
+        private void drawSectorWithInnerCircle(SafeSector sector, Paint paint)
         {
             if (sector.isCircle())
             {
@@ -317,7 +354,7 @@ public class AnchorView extends View implements AnchorWatch.Watcher
         {
                 float sx = (float) toScreenX(circle.getX());
                 float sy = (float) toScreenY(circle.getY());
-                float sr = (float) scale(circle.getRadius());
+                float sr = (float) scaleToScreen(circle.getRadius());
                 return new RectF(
                         sx - sr,
                         sy - sr,

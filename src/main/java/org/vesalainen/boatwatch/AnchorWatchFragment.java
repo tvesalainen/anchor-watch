@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -48,6 +49,7 @@ public class AnchorWatchFragment extends Fragment
         }
 
     };
+    private float touchRadius;
 
     @Override
     public void onAttach(Activity activity)
@@ -62,6 +64,10 @@ public class AnchorWatchFragment extends Fragment
     {
         Log.d("AnchorWatchFragment", "onCreate");
         super.onCreate(savedInstanceState);
+        DisplayMetrics metrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        touchRadius = 24*metrics.density;
+        Log.d("AnchorWatchFragment", "touchRadius="+touchRadius);
         setHasOptionsMenu(true);
         serviceIntent = new Intent(boatWatchActivity, AnchorWatchService.class);
         boatWatchActivity.startService(serviceIntent);
@@ -84,6 +90,7 @@ public class AnchorWatchFragment extends Fragment
         {
             Log.e(LogTitle, "AnchorView not found for id="+R.id.anchor_view);
         }
+        anchorView.setTouchRadius(touchRadius);
         Settings.attach(boatWatchActivity, this);
     }
 
