@@ -216,9 +216,9 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     }
 
     @Setting(Mute)
-    public void setMuteTime(String muteTime)
+    public void setMuteTime(int muteTime)
     {
-        this.muteMillis = 60000*Integer.parseInt(muteTime);
+        this.muteMillis = 60000*muteTime;
     }
     
     @Setting(AlarmTone)

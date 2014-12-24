@@ -17,18 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 
-<resources>
-    <declare-styleable name="NumberPickerPreference">
-        <attr name="minValue" format="string" />
-        <attr name="maxValue" format="string" />
-        <attr name="defValue" format="string" />
-        <attr name="format" format="string" />
-    </declare-styleable>
-    <declare-styleable name="AnchorView">
-        <attr name="pointColor" format="color" />
-        <attr name="areaColor" format="color" />
-        <attr name="usedAreaColor" format="color" />
-        <attr name="estimatedCircleColor" format="color" />
-        <attr name="safeSectorColor" format="color" />
-    </declare-styleable>
-</resources>
+<NumberPicker xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/number_picker"
+        android:layout_width="match_parent" 
+        android:layout_height="match_parent"
+/>

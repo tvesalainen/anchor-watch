@@ -17,7 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res/org.vesalainen.boatwatch"
+>
     <ListPreference
         android:key="pref_distance_unit"
         android:title="@string/distance_unit"
@@ -33,13 +35,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         android:ringtoneType="alarm"
         android:showDefault="true" />
     />
-    <ListPreference
+    <org.vesalainen.boatwatch.NumberPickerPreference
         android:key="pref_mute_time"
         android:title="@string/mute_time"
         android:summary="@string/mute_time_sum"
-        android:entries="@array/minute_entries"
-        android:entryValues="@array/minute_values"
-        android:defaultValue="@string/mute_time_default" />
+        custom:minValue="1"
+        custom:maxValue="30"
+        custom:defValue="5"
+        custom:format="@string/mute_time_format"
+    />
+    <org.vesalainen.boatwatch.DistancePickerPreference
+        android:key="pref_accuracy"
+        android:title="@string/accuracy"
+        android:summary="@string/accuracy_sum"
+        custom:minValue="1"
+        custom:maxValue="30"
+        custom:defValue="1"
     />
     <CheckBoxPreference
         android:key="pref_simulate"

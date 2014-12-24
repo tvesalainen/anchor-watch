@@ -17,7 +17,6 @@
 
 package org.vesalainen.boatwatch;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
