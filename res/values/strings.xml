@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">Smart Anchor Watch</string>
     <string name="app_notification">Smart Anchor Watch: On</string>
     <string name="action_settings">Settings</string>
@@ -18,14 +17,20 @@
     <string name="mute_time_format">%d Minutes</string>
     <string name="distance_unit">Distance Unit</string>
     <string name="distance_unit_sum">Distance Unit</string>
-    <string name="distance_unit_default">meters</string>
+    <string name="distance_unit_meters">m</string>
+    <string name="distance_unit_feet">ft</string>
+    <string name="distance_unit_short_format_meters">%.0f m</string>
+    <string name="distance_unit_short_format_feet">%.0f ft</string>
+    <string name="distance_unit_format_meters">%d Meters</string>
+    <string name="distance_unit_format_feet">%d Feet</string>
+    <string name="distance_unit_default">@string/distance_unit_meters</string>
     <string-array name="distance_unit_entries">
         <item>Meters</item>
-        <item>Feets</item>
+        <item>Feet</item>
     </string-array>
     <string-array name="distance_unit_values">
-        <item>m</item>
-        <item>ft</item>
+        <item>@string/distance_unit_meters</item>
+        <item>@string/distance_unit_feet</item>
     </string-array>
     <string name="accuracy">Minimum Accuracy</string>
     <string name="accuracy_sum">Minimum GPS accuracy</string>

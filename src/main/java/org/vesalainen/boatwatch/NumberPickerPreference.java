@@ -37,6 +37,7 @@ public class NumberPickerPreference extends DialogPreference
     protected int defValue;
     protected int value;
     protected Formatter formatter;
+    private String format;
     
     public NumberPickerPreference(Context context, AttributeSet attrs)
     {
@@ -55,9 +56,10 @@ public class NumberPickerPreference extends DialogPreference
     {
         super.onBindDialogView(view);
         numberPicker = (NumberPicker) view;
-        numberPicker.setMinValue(minValue);
-        numberPicker.setMaxValue(maxValue);
-        numberPicker.setValue(value);
+        numberPicker.setMinValue(toDisplay(minValue));
+        numberPicker.setMaxValue(toDisplay(maxValue));
+        numberPicker.setValue(toDisplay(value));
+        initFormat(format);
         if (formatter != null)
         {
             numberPicker.setFormatter(formatter);
@@ -69,7 +71,7 @@ public class NumberPickerPreference extends DialogPreference
     {
         if (restorePersistedValue)
         {
-           value = toDisplay(getPersistedInt(defValue));
+           value = getPersistedInt(defValue);
         }
         else
         {
@@ -82,8 +84,8 @@ public class NumberPickerPreference extends DialogPreference
     {
         if (positiveResult)
         {
-            value = numberPicker.getValue();
-            persistInt(fromDisplay(value));
+            value = fromDisplay(numberPicker.getValue());
+            persistInt(value);
         }
     }
 
@@ -97,16 +99,15 @@ public class NumberPickerPreference extends DialogPreference
         return value;
     }
 
-    private void init(Context context, AttributeSet attrs)
+    protected void init(Context context, AttributeSet attrs)
     {
         TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.NumberPickerPreference, 0, 0);
         try
         {
-            minValue = toDisplay(a.getInt(R.styleable.NumberPickerPreference_minValue, Integer.MIN_VALUE));
-            maxValue = toDisplay(a.getInt(R.styleable.NumberPickerPreference_maxValue, Integer.MAX_VALUE));
-            defValue = toDisplay(a.getInt(R.styleable.NumberPickerPreference_defValue, Integer.MAX_VALUE));
-            String format = a.getString(R.styleable.NumberPickerPreference_format);
-            initFormat(format);
+            minValue = a.getInt(R.styleable.NumberPickerPreference_minValue, Integer.MIN_VALUE);
+            maxValue = a.getInt(R.styleable.NumberPickerPreference_maxValue, Integer.MAX_VALUE);
+            defValue = a.getInt(R.styleable.NumberPickerPreference_defValue, Integer.MAX_VALUE);
+            format = a.getString(R.styleable.NumberPickerPreference_format);
         }
         finally
         {

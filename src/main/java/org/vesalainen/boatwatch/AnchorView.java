@@ -65,20 +65,14 @@ public class AnchorView extends View implements Watcher
     private String distanceUnit = "m";
     private float touchRadius;
     private DenseMatrix64F usedArea;
-
-    public AnchorView(Context context)
-    {
-        this(context, null, 0);
-    }
+    private final String unitMeters;
+    private final String unitFeet;
+    private final String formatMeters;
+    private final String formatFeet;
 
     public AnchorView(Context context, AttributeSet attrs)
     {
-        this(context, attrs, 0);
-    }
-
-    public AnchorView(Context context, AttributeSet attrs, int defStyle)
-    {
-        super(context, attrs, defStyle);
+        super(context, attrs);
         TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.AnchorView, 0, 0);
         try
         {
@@ -102,6 +96,10 @@ public class AnchorView extends View implements Watcher
         {
             a.recycle();
         }
+        unitMeters = context.getString(R.string.distance_unit_meters);
+        unitFeet = context.getString(R.string.distance_unit_feet);
+        formatMeters = context.getString(R.string.distance_unit_short_format_meters);
+        formatFeet = context.getString(R.string.distance_unit_short_format_feet);
     }
 
     public void setSimulate(boolean simulate)
@@ -293,13 +291,13 @@ public class AnchorView extends View implements Watcher
 
     private String getDistance(double r)
     {
-        switch (distanceUnit)
+        if (unitFeet.equals(distanceUnit))
         {
-            default:
-            case "m":
-                return String.format("%.0f m", AnchorWatch.toMeters(r));
-            case "ft":
-                return String.format("%.0f ft", Feet.fromMeters(AnchorWatch.toMeters(r)));
+            return String.format(formatFeet, Feet.fromMeters(AnchorWatch.toMeters(r)));
+        }
+        else
+        {
+            return String.format(formatMeters, AnchorWatch.toMeters(r));
         }
     }
 

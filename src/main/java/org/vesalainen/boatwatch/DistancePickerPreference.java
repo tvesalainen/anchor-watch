@@ -21,7 +21,6 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.View;
 import static org.vesalainen.boatwatch.Settings.DistanceUnit;
-import org.vesalainen.util.AbstractProvisioner;
 import org.vesalainen.util.AbstractProvisioner.Setting;
 import org.vesalainen.util.navi.Feet;
 
@@ -32,63 +31,71 @@ import org.vesalainen.util.navi.Feet;
 public class DistancePickerPreference extends NumberPickerPreference
 {
     private String distanceUnit;
+    private final String unitMeters;
+    private final String unitFeet;
+    private final String formatMeters;
+    private final String formatFeet;
 
     public DistancePickerPreference(Context context, AttributeSet attrs)
     {
         super(context, attrs);
+        unitMeters = context.getString(R.string.distance_unit_meters);
+        unitFeet = context.getString(R.string.distance_unit_feet);
+        formatMeters = context.getString(R.string.distance_unit_format_meters);
+        formatFeet = context.getString(R.string.distance_unit_format_feet);
     }
 
     @Override
     protected void initFormat(String format)
     {
-        switch (distanceUnit)
+        if (unitFeet.equals(distanceUnit))
         {
-            default:
-            case "m":
-                super.initFormat("%d Meters");
-            case "ft":
-                super.initFormat("%d Feets");
+            super.initFormat(formatFeet);
+        }
+        else
+        {
+            super.initFormat(formatMeters);
         }
     }
 
     @Override
     protected int fromDisplay(int value)
     {
-        switch (distanceUnit)
+        if (unitFeet.equals(distanceUnit))
         {
-            default:
-            case "m":
-                return value;
-            case "ft":
-                return (int) Feet.toMeters(value);
+            return (int) Math.round(Feet.toMeters(value));
+        }
+        else
+        {
+            return value;
         }
     }
 
     @Override
     protected int toDisplay(int value)
     {
-        switch (distanceUnit)
+        if (unitFeet.equals(distanceUnit))
         {
-            default:
-            case "m":
-                return value;
-            case "ft":
-                return (int) Feet.fromMeters(value);
+            return (int) Math.round(Feet.fromMeters(value));
+        }
+        else
+        {
+            return value;
         }
     }
 
     @Override
     protected void onDialogClosed(boolean positiveResult)
     {
-        Settings.detach(getContext());
         super.onDialogClosed(positiveResult);
+        Settings.detach(getContext());
     }
 
     @Override
     protected void onBindDialogView(View view)
     {
+        Settings.attach(getContext(), this);
         super.onBindDialogView(view);
-        Settings.attach(getContext());
     }
     
     @Setting(DistanceUnit)
