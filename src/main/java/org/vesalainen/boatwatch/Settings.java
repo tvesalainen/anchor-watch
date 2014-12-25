@@ -34,6 +34,7 @@ public class Settings
     public static final String Simulate = "pref_simulate";
     public static final String AlarmTone = "pref_alarmtone";
     public static final String Mute = "pref_mute_time";
+    public static final String Accuracy = "pref_accuracy";
     
     public static Provisioner provisioner;
     

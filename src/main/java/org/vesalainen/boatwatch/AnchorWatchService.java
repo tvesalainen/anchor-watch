@@ -42,6 +42,7 @@ import java.util.TimerTask;
 import org.ejml.data.DenseMatrix64F;
 import static org.vesalainen.boatwatch.BoatWatchActivity.AlarmAction;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
+import static org.vesalainen.boatwatch.Settings.Accuracy;
 import static org.vesalainen.boatwatch.Settings.AlarmTone;
 import static org.vesalainen.boatwatch.Settings.Mute;
 import static org.vesalainen.boatwatch.Settings.Simulate;
@@ -72,6 +73,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     private long muteMillis;
     private Timer timer;
     private PowerManager.WakeLock wakeLock;
+    private int minAccuracy;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
@@ -134,9 +136,10 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         timer = null;
         watch.removeWatcher(this);
         stopAlarm();
-        if (!simulate)
+        if (locationManager != null)
         {
             locationManager.removeUpdates(this);
+            locationManager = null;
         }
         Settings.detach(this);
         if (stopping)
@@ -163,7 +166,17 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     public void onLocationChanged(Location location)
     {
         Log.d(LogTitle, location.toString());
-        watch.update(location.getLongitude(), location.getLatitude());
+        if (location.hasAccuracy())
+        {
+            if (location.getAccuracy() <= minAccuracy)
+            {
+                watch.update(location.getLongitude(), location.getLatitude());
+            }
+        }
+        else
+        {
+            watch.update(location.getLongitude(), location.getLatitude());
+        }
     }
 
     @Override
@@ -215,6 +228,12 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         }
     }
 
+    @Setting(Accuracy)
+    public void setMinAccuracy(int minAccuracy)
+    {
+        this.minAccuracy = minAccuracy;
+    }
+    
     @Setting(Mute)
     public void setMuteTime(int muteTime)
     {
