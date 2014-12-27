@@ -40,7 +40,7 @@ import java.io.ObjectOutputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.ejml.data.DenseMatrix64F;
-import static org.vesalainen.boatwatch.BoatWatchActivity.AlarmAction;
+import static org.vesalainen.boatwatch.BoatWatchActivity.AnchorAlarmAction;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
 import static org.vesalainen.boatwatch.Settings.Accuracy;
 import static org.vesalainen.boatwatch.Settings.AlarmTone;
@@ -231,18 +231,21 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     @Setting(Accuracy)
     public void setMinAccuracy(int minAccuracy)
     {
+        Log.d(LogTitle, "minAccuracy="+minAccuracy);
         this.minAccuracy = minAccuracy;
     }
     
     @Setting(Mute)
     public void setMuteTime(int muteTime)
     {
+        Log.d(LogTitle, "muteTime="+muteTime);
         this.muteMillis = 60000*muteTime;
     }
     
     @Setting(AlarmTone)
     public void setAlarmTone(String alarmTone)
     {
+        Log.d(LogTitle, "AlarmTone="+alarmTone);
         this.alarmTone = alarmTone;
     }
     
@@ -251,30 +254,10 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     {
         if (!alarmMuted)
         {
-            acquireWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP);
-            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            int result = audioManager.requestAudioFocus(this, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN);
-            if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) 
-            {
-                Log.e(LogTitle, "Could not gain audio focus "+result);
-            }            
             alarmMuted = true;
-            if (alarmTone != null && !alarmTone.isEmpty())
-            {
-                try {
-                    mediaPlayer = new MediaPlayer();
-                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
-                    mediaPlayer.setDataSource(alarmTone);
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
-                }
-                catch (IOException | IllegalArgumentException | SecurityException | IllegalStateException ex) 
-                {
-                    Log.e(LogTitle, ex.getMessage(), ex);
-                }
-            }
+            startAlarm();
             Intent alarmIntent = new Intent(this, BoatWatchActivity.class);
-            alarmIntent.setAction(AlarmAction);
+            alarmIntent.setAction(AnchorAlarmAction);
             alarmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(alarmIntent);
         }
@@ -303,6 +286,35 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     @Override
     public void safeSector(SafeSector safe)
     {
+    }
+
+    private void startAlarm()
+    {
+        acquireWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP);
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        int result = audioManager.requestAudioFocus(this, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN);
+        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) 
+        {
+            Log.e(LogTitle, "Could not gain audio focus "+result);
+        }            
+        if (alarmTone != null && !alarmTone.isEmpty())
+        {
+            try {
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
+                mediaPlayer.setDataSource(alarmTone);
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+            }
+            catch (IOException | IllegalArgumentException | SecurityException | IllegalStateException ex) 
+            {
+                Log.e(LogTitle, ex.getMessage(), ex);
+            }
+        }
+        else
+        {
+            Log.e(LogTitle, "Could not start alarmtone="+alarmTone);
+        }
     }
 
     private void stopAlarm()

@@ -88,7 +88,7 @@ public class DistancePickerPreference extends NumberPickerPreference
     protected void onDialogClosed(boolean positiveResult)
     {
         super.onDialogClosed(positiveResult);
-        Settings.detach(getContext());
+        Settings.detach(getContext(), this);
     }
 
     @Override

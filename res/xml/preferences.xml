@@ -26,14 +26,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         android:summary="@string/distance_unit_sum"
         android:entries="@array/distance_unit_entries"
         android:entryValues="@array/distance_unit_values"
-        android:defaultValue="@string/distance_unit_default" />
+        android:defaultValue="@string/distance_unit_default"
     />
     <RingtonePreference
         android:key="pref_alarmtone"
         android:title="@string/alarm_tone"
         android:summary="@string/alarm_tone_sum"
         android:ringtoneType="alarm"
-        android:showDefault="true" />
+        android:showDefault="true"
     />
     <org.vesalainen.boatwatch.NumberPickerPreference
         android:key="pref_mute_time"
@@ -42,7 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         custom:minValue="1"
         custom:maxValue="30"
         custom:defValue="5"
-        custom:format="@string/mute_time_format"
+        custom:format="@string/minutes_format"
     />
     <org.vesalainen.boatwatch.DistancePickerPreference
         android:key="pref_accuracy"
@@ -52,9 +52,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         custom:maxValue="30"
         custom:defValue="1"
     />
+    <org.vesalainen.boatwatch.NumberPickerPreference
+        android:key="pref_accuracy_alarm_time"
+        android:title="@string/accuracy_alarm_time"
+        android:summary="@string/accuracy_alarm_time_sum"
+        custom:minValue="1"
+        custom:maxValue="30"
+        custom:defValue="5"
+        custom:format="@string/minutes_format"
+    />
     <CheckBoxPreference
         android:key="pref_simulate"
         android:title="@string/simulate"
         android:summary="@string/simulate_sum"
-        android:defaultValue="false" />
+        android:defaultValue="false" 
+    />
 </PreferenceScreen>

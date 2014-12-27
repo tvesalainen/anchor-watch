@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import java.util.Map;
 import org.vesalainen.util.AbstractProvisioner;
 
@@ -83,6 +84,7 @@ public class Settings
         {
             Map<String, ?> all = sharedPreferences.getAll();
             setValue(key, all.get(key));
+            Log.d("Settings", "onSharedPreferenceChanged "+key+" "+all);
         }
         
         @Override

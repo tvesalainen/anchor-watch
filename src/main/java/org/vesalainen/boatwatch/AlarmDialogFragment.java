@@ -36,8 +36,14 @@ import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
  */
 public class AlarmDialogFragment extends DialogFragment
 {
+    private int resTitle;
     private AnchorWatchBinder binder;
     private boolean bound;
+
+    public AlarmDialogFragment(int resTitle)
+    {
+        this.resTitle = resTitle;
+    }
 
     private ServiceConnection connection = new ServiceConnection()
     {
@@ -62,22 +68,24 @@ public class AlarmDialogFragment extends DialogFragment
     public Dialog onCreateDialog(Bundle savedInstanceState)
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setMessage(R.string.alarm_dialog_title).setPositiveButton(R.string.alarm_dialog_mute, new DialogInterface.OnClickListener()
-        {
-            @Override
-            public void onClick(DialogInterface dialog, int which)
-            {
-                binder.mute();
-            }
-        }).setNegativeButton(R.string.alarm_dialog_exit, new DialogInterface.OnClickListener()
-        {
-            @Override
-            public void onClick(DialogInterface dialog, int which)
-            {
-                binder.stop();
-                getActivity().finish();
-            }
-        });
+        builder.setMessage(resTitle)
+                .setPositiveButton(R.string.alarm_dialog_mute, new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which)
+                    {
+                        binder.mute();
+                    }
+                })
+                .setNegativeButton(R.string.alarm_dialog_exit, new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which)
+                    {
+                        binder.stop();
+                        getActivity().finish();
+                    }
+                });
         return builder.create();
     }
     
