@@ -18,7 +18,6 @@
 package org.vesalainen.boatwatch;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -32,7 +31,8 @@ import android.view.MenuItem;
  */
 public class BoatWatchActivity extends Activity
 {
-    public static final String AlarmAction = "org.vesalainen.boatwatch.AlarmAction";
+    public static final String AnchorAlarmAction = "org.vesalainen.boatwatch.AnchorAlarmAction";
+    public static final String AccuracyAlarmAction = "org.vesalainen.boatwatch.AccuracyAlarmAction";
 
     /**
      * Called when the activity is first created.
@@ -53,11 +53,7 @@ public class BoatWatchActivity extends Activity
                 .commit();    
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         Intent intent = getIntent();
-        if (AlarmAction.equals(intent.getAction()))
-        {
-            AlarmDialogFragment adf = new AlarmDialogFragment();
-            adf.show(getFragmentManager(), null);
-        }        
+        handleIntent(intent);
     }
 
     @Override
@@ -65,11 +61,7 @@ public class BoatWatchActivity extends Activity
     {
         Log.d("BoatWatchActivity", "onNewIntent");
         super.onNewIntent(intent);
-        if (AlarmAction.equals(intent.getAction()))
-        {
-            AlarmDialogFragment adf = new AlarmDialogFragment();
-            adf.show(getFragmentManager(), null);
-        }        
+        handleIntent(intent);
     }
 
     @Override
@@ -102,10 +94,14 @@ public class BoatWatchActivity extends Activity
         switch (item.getItemId())
         {
             case R.id.action_settings:
+                /*
                 getFragmentManager().beginTransaction()
                         .replace(android.R.id.content, new SettingsFragment())
                         .addToBackStack(null)
                         .commit();
+                        */
+                Intent alarmIntent = new Intent(this, SettingsActivity.class);
+                startActivity(alarmIntent);
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -116,6 +112,17 @@ public class BoatWatchActivity extends Activity
     {
         Log.d("BoatWatchActivity", "onDestroy");
         super.onDestroy();
+    }
+
+    private void handleIntent(Intent intent)
+    {
+        switch (intent.getAction())
+        {
+            case AnchorAlarmAction:
+                AlarmDialogFragment adf = new AlarmDialogFragment(R.string.anchor_alarm_dialog_title);
+                adf.show(getFragmentManager(), null);
+                break;
+        }
     }
 
 }
