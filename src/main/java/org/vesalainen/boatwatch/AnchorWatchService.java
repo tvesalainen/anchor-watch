@@ -170,12 +170,19 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         {
             if (location.getAccuracy() <= minAccuracy)
             {
-                watch.update(location.getLongitude(), location.getLatitude());
+                if (location.hasSpeed())
+                {
+                    watch.update(location.getLongitude(), location.getLatitude(), location.getTime(), location.getAccuracy(), location.getSpeed());
+                }
+                else
+                {
+                    watch.update(location.getLongitude(), location.getLatitude(), location.getTime(), location.getAccuracy());
+                }
             }
         }
         else
         {
-            watch.update(location.getLongitude(), location.getLatitude());
+            watch.update(location.getLongitude(), location.getLatitude(), location.getTime());
         }
     }
 
@@ -264,7 +271,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     }
 
     @Override
-    public void location(double x, double y)
+    public void location(double x, double y, long time, double accuracy, double speed)
     {
     }
 
@@ -285,6 +292,11 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
 
     @Override
     public void safeSector(SafeSector safe)
+    {
+    }
+
+    @Override
+    public void suggestNextUpdateIn(double seconds, double meters)
     {
     }
 

@@ -250,7 +250,7 @@ public class AnchorView extends View implements Watcher
     }
 
     @Override
-    public void location(double x, double y)
+    public void location(double x, double y, long time, double accuracy, double speed)
     {
         lastX = x;
         lastY = y;
@@ -287,6 +287,11 @@ public class AnchorView extends View implements Watcher
         drawer.updateCircle(safe);
         this.safe = safe;
         postInvalidate();
+    }
+
+    @Override
+    public void suggestNextUpdateIn(double seconds, double meters)
+    {
     }
 
     private String getDistance(double r)
