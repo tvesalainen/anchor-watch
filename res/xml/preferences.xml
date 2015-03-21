@@ -61,6 +61,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         custom:defValue="5"
         custom:format="@string/minutes_format"
     />
+    <org.vesalainen.boatwatch.NumberPickerPreference
+        android:key="pref_gps_max_sleep_time"
+        android:title="@string/gps_max_sleep_time"
+        android:summary="@string/gps_max_sleep_time_sum"
+        custom:minValue="1"
+        custom:maxValue="500"
+        custom:defValue="60"
+        custom:format="@string/seconds_format"
+    />
     <CheckBoxPreference
         android:key="pref_simulate"
         android:title="@string/simulate"

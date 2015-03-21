@@ -36,6 +36,8 @@ public class Settings
     public static final String AlarmTone = "pref_alarmtone";
     public static final String Mute = "pref_mute_time";
     public static final String Accuracy = "pref_accuracy";
+    public static final String AccuracyAlarmTime = "pref_accuracy_alarm_time";
+    public static final String GPSMaxSleep = "pref_gps_max_sleep_time";
     
     public static Provisioner provisioner;
     

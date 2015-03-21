@@ -40,12 +40,9 @@ import java.io.ObjectOutputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.ejml.data.DenseMatrix64F;
-import static org.vesalainen.boatwatch.BoatWatchActivity.AnchorAlarmAction;
+import static org.vesalainen.boatwatch.BoatWatchActivity.*;
 import static org.vesalainen.boatwatch.BoatWatchConstants.*;
-import static org.vesalainen.boatwatch.Settings.Accuracy;
-import static org.vesalainen.boatwatch.Settings.AlarmTone;
-import static org.vesalainen.boatwatch.Settings.Mute;
-import static org.vesalainen.boatwatch.Settings.Simulate;
+import static org.vesalainen.boatwatch.Settings.*;
 import org.vesalainen.math.Circle;
 import org.vesalainen.math.ConvexPolygon;
 import org.vesalainen.navi.AnchorWatch;
@@ -74,6 +71,10 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     private Timer timer;
     private PowerManager.WakeLock wakeLock;
     private int minAccuracy;
+    private int maxGPSSleep;
+    private int accuracyAlarmMillis;
+    private TimerTask accuracyWatchdog;
+    private int lastSleep = 1;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
@@ -170,6 +171,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         {
             if (location.getAccuracy() <= minAccuracy)
             {
+                stopAccuracyWatchDog();
                 if (location.hasSpeed())
                 {
                     watch.update(location.getLongitude(), location.getLatitude(), location.getTime(), location.getAccuracy(), location.getSpeed());
@@ -182,8 +184,10 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         }
         else
         {
+            stopAccuracyWatchDog();
             watch.update(location.getLongitude(), location.getLatitude(), location.getTime());
         }
+        startAccuracyWatchDog();
     }
 
     @Override
@@ -231,7 +235,8 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
                 watch.reset();
             }
             locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, lastSleep, 1, this);
+            startAccuracyWatchDog();
         }
     }
 
@@ -242,11 +247,18 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         this.minAccuracy = minAccuracy;
     }
     
-    @Setting(Mute)
-    public void setMuteTime(int muteTime)
+    @Setting(AccuracyAlarmTime)
+    public void setAccuracyAlarmTime(int accuracyAlarmMinutes)
     {
-        Log.d(LogTitle, "muteTime="+muteTime);
-        this.muteMillis = 60000*muteTime;
+        Log.d(LogTitle, "accuracyAlarmSeconds="+accuracyAlarmMinutes);
+        this.accuracyAlarmMillis = accuracyAlarmMinutes*60000;
+    }
+    
+    @Setting(Mute)
+    public void setMuteTime(int muteMinutes)
+    {
+        Log.d(LogTitle, "muteTime="+muteMinutes);
+        this.muteMillis = 60000*muteMinutes;
     }
     
     @Setting(AlarmTone)
@@ -254,6 +266,13 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     {
         Log.d(LogTitle, "AlarmTone="+alarmTone);
         this.alarmTone = alarmTone;
+    }
+    
+    @Setting(GPSMaxSleep)
+    public void setGPSMaxSleep(int maxSleep)
+    {
+        Log.d(LogTitle, "maxSleep="+maxSleep);
+        this.maxGPSSleep = maxSleep;
     }
     
     @Override
@@ -298,6 +317,26 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     @Override
     public void suggestNextUpdateIn(double seconds, double meters)
     {
+        Log.e(LogTitle, "suggestNextUpdateIn("+seconds+", "+meters+")");
+        if (locationManager != null)
+        {
+            int sec = (int) seconds;
+            if (Double.isNaN(seconds) || seconds < 1.0)
+            {
+                sec = 1;
+            }
+            if (Double.isInfinite(seconds) || seconds > maxGPSSleep)
+            {
+                sec = maxGPSSleep;
+            }
+            if (sec != lastSleep)
+            {
+                lastSleep = sec;
+                locationManager.removeUpdates(this);
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, (long)lastSleep, (float)meters, this);
+                Log.e(LogTitle, "requestLocationUpdates("+lastSleep+", "+meters+")");
+            }
+        }
     }
 
     private void startAlarm()
@@ -361,6 +400,36 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     {
     }
 
+    private void startAccuracyWatchDog()
+    {
+        if (accuracyWatchdog == null)
+        {
+            final AnchorWatchService aws = this;
+            accuracyWatchdog = new TimerTask() 
+            {
+                @Override
+                public void run()
+                {
+                    startAlarm();
+                    Intent alarmIntent = new Intent(aws, BoatWatchActivity.class);
+                    alarmIntent.setAction(AccuracyAlarmAction);
+                    alarmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(alarmIntent);
+                }
+            };
+            timer.schedule(accuracyWatchdog, accuracyAlarmMillis);
+        }
+    }
+
+    private void stopAccuracyWatchDog()
+    {
+        if (accuracyWatchdog != null)
+        {
+            accuracyWatchdog.cancel();
+            accuracyWatchdog = null;
+        }
+    }
+    
     public class AnchorWatchBinder extends Binder
     {
         private TimerTask resumeAlarm;
@@ -377,23 +446,35 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
             stopping = true;
             stopSelf();
         }
-        void mute()
+        void mute(String action)
         {
             stopAlarm();
-            if (resumeAlarm != null)
+            switch (action)
             {
-                resumeAlarm.cancel();
-            }
-            resumeAlarm = new TimerTask() 
-            {
-                @Override
-                public void run()
+                case AnchorAlarmAction:
                 {
-                    alarmMuted = false;
-                    resumeAlarm = null;
+                    if (resumeAlarm != null)
+                    {
+                        resumeAlarm.cancel();
+                    }
+                    resumeAlarm = new TimerTask() 
+                    {
+                        @Override
+                        public void run()
+                        {
+                            alarmMuted = false;
+                            resumeAlarm = null;
+                        }
+                    };
+                    timer.schedule(resumeAlarm, muteMillis);
                 }
-            };
-            timer.schedule(resumeAlarm, muteMillis);
+                    break;
+                case AccuracyAlarmAction:
+                {
+                    stopAccuracyWatchDog();
+                }
+                    break;
+            }
         }
     }
 }

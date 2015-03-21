@@ -119,8 +119,16 @@ public class BoatWatchActivity extends Activity
         switch (intent.getAction())
         {
             case AnchorAlarmAction:
-                AlarmDialogFragment adf = new AlarmDialogFragment(R.string.anchor_alarm_dialog_title);
+            {
+                AlarmDialogFragment adf = new AlarmDialogFragment(R.string.anchor_alarm_dialog_title, intent.getAction());
                 adf.show(getFragmentManager(), null);
+            }
+                break;
+            case AccuracyAlarmAction:
+            {
+                AlarmDialogFragment adf = new AlarmDialogFragment(R.string.accuracy_alarm_dialog_title, intent.getAction());
+                adf.show(getFragmentManager(), null);
+            }
                 break;
         }
     }

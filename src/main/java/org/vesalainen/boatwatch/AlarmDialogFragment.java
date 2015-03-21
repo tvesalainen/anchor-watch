@@ -36,13 +36,15 @@ import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
  */
 public class AlarmDialogFragment extends DialogFragment
 {
-    private int resTitle;
+    private final int resTitle;
     private AnchorWatchBinder binder;
     private boolean bound;
+    private final String action;
 
-    public AlarmDialogFragment(int resTitle)
+    public AlarmDialogFragment(int resTitle, String action)
     {
         this.resTitle = resTitle;
+        this.action = action;
     }
 
     private ServiceConnection connection = new ServiceConnection()
@@ -74,7 +76,7 @@ public class AlarmDialogFragment extends DialogFragment
                     @Override
                     public void onClick(DialogInterface dialog, int which)
                     {
-                        binder.mute();
+                        binder.mute(action);
                     }
                 })
                 .setNegativeButton(R.string.alarm_dialog_exit, new DialogInterface.OnClickListener()

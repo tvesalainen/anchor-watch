@@ -10,6 +10,7 @@
     <string name="alarm_tone">Alarm Tone</string>
     <string name="alarm_tone_sum">Tone that sounds when alarm</string>
     <string name="anchor_alarm_dialog_title">Anchor is outside safe sector</string>
+    <string name="accuracy_alarm_dialog_title">No (accurate) GPS Signal</string>
     <string name="alarm_dialog_exit">Exit Application</string>
     <string name="alarm_dialog_mute">Mute</string>
     <string name="mute_time">Mute Time</string>
@@ -36,4 +37,7 @@
     </string-array>
     <string name="accuracy">Minimum Accuracy</string>
     <string name="accuracy_sum">Minimum GPS accuracy</string>
+    <string name="gps_max_sleep_time">GPS Maximum Sleep</string>
+    <string name="gps_max_sleep_time_sum">GPS Maximum Sleeping Time in Seconds</string>
+    <string name="seconds_format">%d Seconds</string>
 </resources>
