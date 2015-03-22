@@ -62,7 +62,7 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     private LocationManager locationManager;
     private final IBinder binder = new AnchorWatchBinder();
     private AnchorageSimulator simulator;
-    private boolean simulate = true;
+    private final boolean simulate = true;
     private boolean stopping;
     private String alarmTone;
     private MediaPlayer mediaPlayer;
@@ -478,6 +478,11 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
                 }
                     break;
             }
+        }
+        
+        boolean setAnchorLocation()
+        {
+            return watch.setAnchorLocation();
         }
     }
 }

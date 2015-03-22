@@ -19,52 +19,22 @@ package org.vesalainen.boatwatch;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.util.Log;
-import org.vesalainen.boatwatch.AnchorWatchService.AnchorWatchBinder;
 
 /**
  *
  * @author Timo Vesalainen
  */
-public class AlarmDialogFragment extends DialogFragment
+public class AlarmDialogFragment extends BinderDialogFragment
 {
-    private final int resTitle;
-    private AnchorWatchBinder binder;
-    private boolean bound;
     private final String action;
 
     public AlarmDialogFragment(int resTitle, String action)
     {
-        this.resTitle = resTitle;
+        super(resTitle);
         this.action = action;
     }
-
-    private ServiceConnection connection = new ServiceConnection()
-    {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service)
-        {
-            Log.d("AlarmDialogFragment", "onServiceConnected");
-            binder = (AnchorWatchService.AnchorWatchBinder) service;
-            bound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name)
-        {
-            Log.d("AlarmDialogFragment", "onServiceDisconnected");
-            bound = false;
-        }
-
-    };
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState)
@@ -91,25 +61,4 @@ public class AlarmDialogFragment extends DialogFragment
         return builder.create();
     }
     
-    @Override
-    public void onStart()
-    {
-        Log.d("AnchorWatchFragment", "onStart");
-        super.onStart();
-        
-        Intent intent = new Intent(getActivity(), AnchorWatchService.class);
-        getActivity().bindService(intent, connection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    public void onStop()
-    {
-        Log.d("AnchorWatchFragment", "onStop");
-        if (bound)
-        {
-            getActivity().unbindService(connection);
-        }
-        super.onStop();
-    }
-
 }

@@ -94,14 +94,12 @@ public class BoatWatchActivity extends Activity
         switch (item.getItemId())
         {
             case R.id.action_settings:
-                /*
-                getFragmentManager().beginTransaction()
-                        .replace(android.R.id.content, new SettingsFragment())
-                        .addToBackStack(null)
-                        .commit();
-                        */
-                Intent alarmIntent = new Intent(this, SettingsActivity.class);
-                startActivity(alarmIntent);
+                Intent settingsIntent = new Intent(this, SettingsActivity.class);
+                startActivity(settingsIntent);
+                return true;
+            case R.id.action_set_location:
+                SetAnchorDialogFragment sadf = new SetAnchorDialogFragment(R.string.action_set_location);
+                sadf.show(getFragmentManager(), null);
                 return true;
         }
         return super.onOptionsItemSelected(item);

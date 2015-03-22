@@ -40,4 +40,7 @@
     <string name="gps_max_sleep_time">GPS Maximum Sleep</string>
     <string name="gps_max_sleep_time_sum">GPS Maximum Sleeping Time in Seconds</string>
     <string name="seconds_format">%d Seconds</string>
+    <string name="action_set_location">Set Location</string>
+    <string name="set">Set</string>
+    <string name="cancel">Cancel</string>
 </resources>
