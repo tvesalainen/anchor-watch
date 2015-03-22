@@ -71,10 +71,10 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     private Timer timer;
     private PowerManager.WakeLock wakeLock;
     private int minAccuracy;
-    private int maxGPSSleep;
+    private long maxGPSSleepMillis;
     private int accuracyAlarmMillis;
     private TimerTask accuracyWatchdog;
-    private int lastSleep = 1;
+    private long lastSleep;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
@@ -269,10 +269,10 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
     }
     
     @Setting(GPSMaxSleep)
-    public void setGPSMaxSleep(int maxSleep)
+    public void setGPSMaxSleep(int maxSleepSeconds)
     {
-        Log.d(LogTitle, "maxSleep="+maxSleep);
-        this.maxGPSSleep = maxSleep;
+        Log.d(LogTitle, "maxSleep="+maxSleepSeconds);
+        this.maxGPSSleepMillis = maxSleepSeconds*1000;
     }
     
     @Override
@@ -320,18 +320,21 @@ public class AnchorWatchService extends Service implements LocationListener, Wat
         Log.e(LogTitle, "suggestNextUpdateIn("+seconds+", "+meters+")");
         if (locationManager != null)
         {
-            int sec = (int) seconds;
+            long millis = (long) (seconds*1000);
             if (Double.isNaN(seconds) || seconds < 1.0)
             {
-                sec = 1;
+                millis = 0;
             }
-            if (Double.isInfinite(seconds) || seconds > maxGPSSleep)
+            else
             {
-                sec = maxGPSSleep;
+                if (Double.isInfinite(seconds) || millis > maxGPSSleepMillis)
+                {
+                    millis = maxGPSSleepMillis;
+                }
             }
-            if (sec != lastSleep)
+            if (millis < lastSleep || millis - lastSleep > 1000)
             {
-                lastSleep = sec;
+                lastSleep = millis;
                 locationManager.removeUpdates(this);
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, (long)lastSleep, (float)meters, this);
                 Log.e(LogTitle, "requestLocationUpdates("+lastSleep+", "+meters+")");
