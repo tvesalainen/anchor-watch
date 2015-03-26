@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.vesalainen</groupId>
+        <artifactId>parent</artifactId>
+        <version>1.0.1</version>
+    </parent>    
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.vesalainen</groupId>
     <artifactId>boatwatch</artifactId>
@@ -30,15 +35,18 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-androidpublisher</artifactId>
+            <version>v1-rev53-1.20.0</version>
+        </dependency>        
+        <dependency>
             <groupId>org.vesalainen</groupId>
             <artifactId>util</artifactId>
-            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
-            <version>4.11</version>
         </dependency>
     </dependencies>
     <build>
